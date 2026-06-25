@@ -1,0 +1,13 @@
+# Secrets - NIEMALS committen!
+client_secrets.json
+youtube_token.json
+.env
+
+# Output
+output/
+__pycache__/
+*.pyc
+*.mp3
+*.mp4
+*.json
+!requirements.txt
