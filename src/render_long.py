@@ -18,7 +18,9 @@ from fetch_background import fetch_background_clips
 from render_video import _find_font, _strip_emoji, _wrap, _probe_duration, CATEGORY_COLORS, DEFAULT_COLORS
 
 LW, LH = 1920, 1080
-SEG = 6.0  # seconds per clip in the base montage
+SEG = 3.0           # seconds per clip before a cut (faster = more dynamic)
+BASE_TARGET = 78.0  # length of the base montage before it loops (more variety)
+ZOOM_PER_SEG = 0.14 # Ken-Burns push per clip
 
 
 def _gradient(top, bottom, path):
@@ -158,19 +160,41 @@ def make_thumbnail(comp: dict, path: str) -> str:
 
 
 def _build_montage(clips, out_path):
-    """Concatenates clips (SEG seconds each) once into a base montage to be looped."""
+    """Builds a varied base montage (~BASE_TARGET s) with fast cuts + zoom-push.
+
+    Cycles through the clips with varied start points so the same clip never
+    shows the same moment twice, then this base is looped to fill the video.
+    """
     durations = {c: _probe_duration(c) for c in clips}
     clips = [c for c in clips if durations[c] >= 1.0] or clips
 
+    n_segments = max(len(clips), math.ceil(BASE_TARGET / SEG))
+    seg_frames = max(1, int(SEG * 30))
+    zin = ZOOM_PER_SEG / seg_frames
+    usage = {c: 0 for c in clips}
+
     inputs, filters, labels = [], [], []
-    for i, clip in enumerate(clips):
-        seg = min(SEG, max(1.0, durations.get(clip, SEG)))
-        inputs += ["-ss", "0", "-t", f"{seg:.2f}", "-i", clip]
+    for i in range(n_segments):
+        clip = clips[i % len(clips)]
+        dur = durations.get(clip, 0) or SEG
+        max_start = max(0.0, dur - SEG)
+        start = (usage[clip] * SEG) % (max_start + 0.001) if max_start > 0 else 0.0
+        usage[clip] += 1
+
+        inputs += ["-ss", f"{start:.2f}", "-t", f"{SEG:.2f}", "-i", clip]
+        if i % 2 == 0:
+            zexpr = f"min(zoom+{zin:.5f},{1 + ZOOM_PER_SEG:.3f})"
+        else:
+            zexpr = f"if(eq(on,0),{1 + ZOOM_PER_SEG:.3f},max(zoom-{zin:.5f},1.0))"
         filters.append(
-            f"[{i}:v]scale={LW}:{LH}:force_original_aspect_ratio=increase,"
-            f"crop={LW}:{LH},setsar=1,fps=30,format=yuv420p[v{i}]")
+            f"[{i}:v]fps=30,"
+            f"scale={int(LW*1.25)}:{int(LH*1.25)}:force_original_aspect_ratio=increase,"
+            f"crop={int(LW*1.25)}:{int(LH*1.25)},"
+            f"zoompan=z='{zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+            f"s={LW}x{LH}:fps=30,setsar=1,format=yuv420p[v{i}]")
         labels.append(f"[v{i}]")
-    concat = "".join(labels) + f"concat=n={len(clips)}:v=1:a=0[bg]"
+
+    concat = "".join(labels) + f"concat=n={n_segments}:v=1:a=0[bg]"
     cmd = ["ffmpeg", "-y"] + inputs + [
         "-filter_complex", ";".join(filters + [concat]), "-map", "[bg]",
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
@@ -189,7 +213,7 @@ def render_long(comp: dict, audio_path: str, sections: list[dict], output_path: 
 
     # ---- background ----
     clips = fetch_background_clips(comp.get("category", ""), str(work / "clips"),
-                                   count=8, tags=comp.get("tags"), orientation="landscape")
+                                   count=14, tags=comp.get("tags"), orientation="landscape")
     if clips:
         base = _build_montage(clips, str(work / "base.mp4"))
         bg_input = ["-stream_loop", "-1", "-i", base]

@@ -37,7 +37,7 @@ Antworte NUR mit einem JSON-Objekt:
 }}"""
 
 
-def generate_fact(category: str = None, avoid: list[str] = None) -> dict:
+def generate_fact(category: str = None, avoid: list[str] = None, attempts: int = 3) -> dict:
     if category is None:
         category = random.choice(CATEGORIES)
 
@@ -45,19 +45,28 @@ def generate_fact(category: str = None, avoid: list[str] = None) -> dict:
     prompt = PROMPT_TEMPLATE.format(category=category, avoid=avoid_block(avoid or []))
 
     client = anthropic.Anthropic()
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=512,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    last_err = None
+    for attempt in range(attempts):
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = message.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        try:
+            data = json.loads(raw.strip())
+            if not data.get("body"):
+                raise ValueError("Kein Fakt-Text generiert")
+            return data
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e
+            print(f"Antwort ungültig (Versuch {attempt + 1}/{attempts}): {e} — wiederhole...")
 
-    raw = message.content[0].text.strip()
-    # Strip potential markdown code fences
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw.strip())
+    raise RuntimeError(f"Konnte nach {attempts} Versuchen keinen gültigen Fakt erzeugen: {last_err}")
 
 
 if __name__ == "__main__":

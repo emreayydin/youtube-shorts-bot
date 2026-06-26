@@ -18,6 +18,9 @@ Regeln:
 - Sprache: Deutsch, direkt den Zuschauer ansprechen
 - Reihenfolge: spannend aufbauen, der beste Fakt zuletzt
 
+WICHTIG für gültiges JSON: Verwende NIEMALS doppelte Anführungszeichen (") innerhalb
+der Texte — nutze stattdessen einfache (') oder gar keine. Keine Zeilenumbrüche in Werten.
+
 Antworte NUR mit einem JSON-Objekt (keine Erklärung, kein Markdown):
 {{
   "title": "Clickbait-Titel (max 70 Zeichen)",
@@ -34,7 +37,8 @@ Antworte NUR mit einem JSON-Objekt (keine Erklärung, kein Markdown):
 Die "facts"-Liste muss genau 10 Einträge haben."""
 
 
-def generate_compilation(category: str = None, avoid: list[str] = None) -> dict:
+def generate_compilation(category: str = None, avoid: list[str] = None,
+                         attempts: int = 3) -> dict:
     if category is None:
         category = random.choice(CATEGORIES)
 
@@ -42,23 +46,28 @@ def generate_compilation(category: str = None, avoid: list[str] = None) -> dict:
     prompt = PROMPT_TEMPLATE.format(category=category, avoid=avoid_block(avoid or []))
 
     client = anthropic.Anthropic()
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4096,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    last_err = None
+    for attempt in range(attempts):
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = message.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        try:
+            data = json.loads(raw.strip())
+            if not data.get("facts"):
+                raise ValueError("Keine Fakten generiert")
+            return data
+        except (json.JSONDecodeError, ValueError) as e:
+            last_err = e
+            print(f"Antwort ungültig (Versuch {attempt + 1}/{attempts}): {e} — wiederhole...")
 
-    raw = message.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    data = json.loads(raw.strip())
-
-    # Safety: ensure facts list is non-empty
-    if not data.get("facts"):
-        raise ValueError("Keine Fakten generiert")
-    return data
+    raise RuntimeError(f"Konnte nach {attempts} Versuchen kein gültiges Skript erzeugen: {last_err}")
 
 
 if __name__ == "__main__":
