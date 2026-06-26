@@ -33,19 +33,18 @@ def _gradient(top, bottom, path):
     return path
 
 
-def _scrim(path):
+def _new_scrim_img():
+    """New full-frame RGBA image with the scrim already drawn (baked into cards)."""
     img = Image.new("RGBA", (LW, LH), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rectangle([0, 0, LW, LH], fill=(0, 0, 0, 80))
     d.rectangle([0, 0, LW, 230], fill=(0, 0, 0, 80))          # top band for banner
     d.rectangle([0, LH - 160, LW, LH], fill=(0, 0, 0, 70))    # bottom band
-    img.save(path)
-    return path
+    return img, d
 
 
 def _intro_card(comp, path):
-    img = Image.new("RGBA", (LW, LH), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
+    img, d = _new_scrim_img()
     badge_f = _find_font(54)
     title_f = _find_font(108)
 
@@ -67,8 +66,7 @@ def _intro_card(comp, path):
 
 
 def _fact_card(idx, total, headline, path):
-    img = Image.new("RGBA", (LW, LH), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
+    img, d = _new_scrim_img()
     num_f = _find_font(60)
     head_f = _find_font(76)
 
@@ -95,8 +93,7 @@ def _fact_card(idx, total, headline, path):
 
 
 def _outro_card(comp, path):
-    img = Image.new("RGBA", (LW, LH), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
+    img, d = _new_scrim_img()
     q_f = _find_font(82)
     sub_f = _find_font(56)
 
@@ -226,49 +223,46 @@ def render_long(comp: dict, audio_path: str, sections: list[dict], output_path: 
                      f"crop={LW}:{LH}:x='(in_w-{LW})/2+sin(t/6)*50':"
                      f"y='(in_h-{LH})/2+cos(t/7)*40',setsar=1[bg]")
 
-    t_arg = ["-t", f"{total:.2f}"]
-    scrim = _scrim(str(work / "scrim.png"))
-
-    # ---- one card per section ----
+    # ---- one card per section (scrim baked in) ----
     total_facts = len(comp["facts"])
-    cards = []
-    fact_i = 0
-    for s in sections:
-        p = str(work / f"card_{len(cards)}.png")
+    cards, fact_i = [], 0
+    for i, s in enumerate(sections):
+        p = str(work / f"card_{i}.png")
         if s["label"] == "intro":
             _intro_card(comp, p)
         elif s["label"] == "outro":
             _outro_card(comp, p)
         else:
             fact_i += 1
-            headline = comp["facts"][fact_i - 1]["headline"]
-            _fact_card(fact_i, total_facts, headline, p)
-        cards.append({"path": p, "start": s["start"], "end": s["end"]})
+            _fact_card(fact_i, total_facts, comp["facts"][fact_i - 1]["headline"], p)
+        cards.append({"path": p, "dur": max(0.1, s["end"] - s["start"])})
 
-    # ---- compose ----
+    # concat-demuxer list -> ONE timed overlay track (last entry repeated for its duration)
+    list_path = work / "cards.txt"
+    lines = []
+    for c in cards:
+        lines.append(f"file '{c['path']}'")
+        lines.append(f"duration {c['dur']:.3f}")
+    lines.append(f"file '{cards[-1]['path']}'")
+    list_path.write_text("\n".join(lines))
+
+    # ---- compose: background + ONE overlay track + audio (only 3 inputs) ----
     cmd = ["ffmpeg", "-y"] + bg_input
-    cmd += ["-loop", "1"] + t_arg + ["-i", scrim]   # 1
-    for c in cards:                                  # 2..N
-        cmd += ["-loop", "1"] + t_arg + ["-i", c["path"]]
-    cmd += ["-i", audio_path]                        # last
-    audio_idx = 2 + len(cards)
+    cmd += ["-f", "concat", "-safe", "0", "-i", str(list_path)]   # 1: overlay track
+    cmd += ["-i", audio_path]                                     # 2: audio
 
-    parts = [bg_filter, "[bg][1:v]overlay[base0]"]
-    last = "base0"
-    for i, c in enumerate(cards):
-        out = f"s{i}"
-        parts.append(f"[{last}][{2 + i}:v]overlay=enable='between(t,{c['start']:.2f},{c['end']:.2f})'[{out}]")
-        last = out
-
+    filter_complex = (
+        bg_filter
+        + ";[1:v]fps=30,format=rgba,setsar=1[ov]"
+        + ";[bg][ov]overlay=eof_action=pass:format=auto[v]"
+    )
     cmd += [
-        "-filter_complex", ";".join(parts),
-        "-map", f"[{last}]", "-map", f"{audio_idx}:a",
-        # ultrafast: GitHub's 2-core runner is slow at libx264; YouTube re-encodes
-        # anyway, so the larger ultrafast file costs us nothing in final quality.
+        "-filter_complex", filter_complex,
+        "-map", "[v]", "-map", "2:a",
+        # ultrafast: GitHub's 2-core runner is slow at libx264; YouTube re-encodes anyway.
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
         "-c:a", "aac", "-b:a", "192k", "-pix_fmt", "yuv420p", "-r", "30",
-        "-threads", "0",
-        "-t", f"{total:.2f}", "-shortest", output_path]
+        "-threads", "0", "-t", f"{total:.2f}", "-shortest", output_path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(f"ffmpeg failed:\n{r.stderr[-2500:]}")
