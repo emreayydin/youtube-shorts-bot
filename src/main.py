@@ -39,7 +39,6 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     import history
     fact = generate_fact(category, avoid=history.recent_titles(40, kind="short"))
     log.info(f"Fakt: {fact['title']}")
-    history.add_entry("short", fact["title"], fact.get("category", ""))
 
     fact_path = OUTPUT_DIR / f"fact_{timestamp}.json"
     fact_path.write_text(json.dumps(fact, ensure_ascii=False, indent=2))
@@ -71,6 +70,8 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
         tags=fact.get("tags", []),
         privacy=privacy,
     )
+    # Only record actually-posted videos so the topic is avoided next time
+    history.add_entry("short", fact["title"], fact.get("category", ""))
     log.info(f"Fertig! https://youtube.com/shorts/{video_id}")
     return video_id
 

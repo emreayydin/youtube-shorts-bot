@@ -37,7 +37,6 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     import history
     comp = generate_compilation(category, avoid=history.recent_titles(30, kind="long"))
     log.info(f"Titel: {comp['title']} ({len(comp['facts'])} Fakten)")
-    history.add_entry("long", comp["title"], comp.get("category", ""))
     (OUTPUT_DIR / f"comp_{ts}.json").write_text(json.dumps(comp, ensure_ascii=False, indent=2))
 
     # Build narration segments: intro, each fact (headline + body), outro
@@ -75,6 +74,8 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
         tags=comp.get("tags", []), privacy=privacy, is_short=False,
     )
     set_thumbnail(video_id, thumb_path)
+    # Only record actually-posted videos so the topic is avoided next time
+    history.add_entry("long", comp["title"], comp.get("category", ""))
     log.info(f"Fertig! https://youtu.be/{video_id}")
     return video_id
 
