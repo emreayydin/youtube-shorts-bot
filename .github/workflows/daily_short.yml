@@ -2,8 +2,8 @@ name: Daily YouTube Short
 
 on:
   schedule:
-    # Jeden Tag um 12:00 Uhr UTC (14:00 Uhr deutsche Zeit)
-    - cron: "0 12 * * *"
+    # Alle 4 Stunden (6x täglich) — 0,4,8,12,16,20 UTC = 2,6,10,14,18,22 Uhr DE
+    - cron: "0 */4 * * *"
   workflow_dispatch:
     inputs:
       category:
