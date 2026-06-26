@@ -12,7 +12,7 @@ CATEGORIES = [
 PROMPT_TEMPLATE = """Du bist Experte für virale YouTube Shorts und schreibst fesselnde Trivia.
 
 Erstelle einen einzelnen, faszinierenden Fakt über das Thema: {category}
-
+{avoid}
 Die ersten 2 Sekunden entscheiden alles. Der HOOK muss ein Pattern-Interrupt sein:
 - Maximal 8 Wörter, extrem zugespitzt
 - Erzeugt eine Wissenslücke ("Curiosity Gap") die man füllen MUSS
@@ -37,15 +37,18 @@ Antworte NUR mit einem JSON-Objekt:
 }}"""
 
 
-def generate_fact(category: str = None) -> dict:
+def generate_fact(category: str = None, avoid: list[str] = None) -> dict:
     if category is None:
         category = random.choice(CATEGORIES)
+
+    from history import avoid_block
+    prompt = PROMPT_TEMPLATE.format(category=category, avoid=avoid_block(avoid or []))
 
     client = anthropic.Anthropic()
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=512,
-        messages=[{"role": "user", "content": PROMPT_TEMPLATE.format(category=category)}],
+        messages=[{"role": "user", "content": prompt}],
     )
 
     raw = message.content[0].text.strip()

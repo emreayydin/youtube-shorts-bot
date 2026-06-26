@@ -34,10 +34,12 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     OUTPUT_DIR.mkdir(exist_ok=True)
 
-    # 1. Generate fact
+    # 1. Generate fact (avoiding previously posted topics)
     log.info("Generiere Trivia-Fakt...")
-    fact = generate_fact(category)
+    import history
+    fact = generate_fact(category, avoid=history.recent_titles(40, kind="short"))
     log.info(f"Fakt: {fact['title']}")
+    history.add_entry("short", fact["title"], fact.get("category", ""))
 
     fact_path = OUTPUT_DIR / f"fact_{timestamp}.json"
     fact_path.write_text(json.dumps(fact, ensure_ascii=False, indent=2))

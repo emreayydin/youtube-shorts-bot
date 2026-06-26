@@ -9,7 +9,7 @@ from generate_content import CATEGORIES
 PROMPT_TEMPLATE = """Du bist ein Autor für faszinierende YouTube-Wissensvideos.
 
 Erstelle ein Skript für ein "Top 10"-Compilation-Video zum Thema: {category}
-
+{avoid}
 Regeln:
 - Genau 10 verblüffende, wahre, möglichst unbekannte Fakten
 - Jeder Fakt: 60-80 Wörter, lebendig und überraschend erzählt
@@ -34,15 +34,18 @@ Antworte NUR mit einem JSON-Objekt (keine Erklärung, kein Markdown):
 Die "facts"-Liste muss genau 10 Einträge haben."""
 
 
-def generate_compilation(category: str = None) -> dict:
+def generate_compilation(category: str = None, avoid: list[str] = None) -> dict:
     if category is None:
         category = random.choice(CATEGORIES)
+
+    from history import avoid_block
+    prompt = PROMPT_TEMPLATE.format(category=category, avoid=avoid_block(avoid or []))
 
     client = anthropic.Anthropic()
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=4096,
-        messages=[{"role": "user", "content": PROMPT_TEMPLATE.format(category=category)}],
+        messages=[{"role": "user", "content": prompt}],
     )
 
     raw = message.content[0].text.strip()

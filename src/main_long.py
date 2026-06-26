@@ -34,8 +34,10 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     OUTPUT_DIR.mkdir(exist_ok=True)
 
     log.info("Generiere Compilation-Skript...")
-    comp = generate_compilation(category)
+    import history
+    comp = generate_compilation(category, avoid=history.recent_titles(30, kind="long"))
     log.info(f"Titel: {comp['title']} ({len(comp['facts'])} Fakten)")
+    history.add_entry("long", comp["title"], comp.get("category", ""))
     (OUTPUT_DIR / f"comp_{ts}.json").write_text(json.dumps(comp, ensure_ascii=False, indent=2))
 
     # Build narration segments: intro, each fact (headline + body), outro
