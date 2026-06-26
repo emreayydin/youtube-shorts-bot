@@ -109,7 +109,7 @@ def make_banner():
            font=f_tag, fill=LIGHT)
 
     f_small = font(BOLD, 40)
-    chip = "NEUES SHORT JEDEN TAG · 14:00 UHR"
+    chip = "TÄGLICH NEUE SHORTS"
     w = d.textlength(chip, font=f_small)
     d.rounded_rectangle([cx - 345, cy + 120, cx - 345 + w + 44, cy + 184], radius=18, fill=GOLD)
     d.text((cx - 323, cy + 130), chip, font=f_small, fill=(11, 20, 55))
