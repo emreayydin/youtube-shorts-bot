@@ -67,15 +67,20 @@ def upload_short(
     tags: list[str],
     category_id: str = "27",  # 27 = Education
     privacy: str = "public",  # "public", "private", or "unlisted"
+    is_short: bool = True,    # False = normal long-form video (no #Shorts)
 ) -> str:
     """
-    Uploads a video as a YouTube Short.
+    Uploads a video to YouTube. With is_short=True the description carries the
+    #Shorts tag so YouTube classifies it as a Short; with is_short=False it is
+    uploaded as a normal long-form video.
     Returns the video ID.
     """
     youtube = get_youtube_service()
 
-    # #Shorts in description triggers Shorts classification
-    full_description = f"{description}\n\n#Shorts #Fakten #Trivia #Wissen #Lernen"
+    if is_short:
+        full_description = f"{description}\n\n#Shorts #Fakten #Trivia #Wissen #Lernen"
+    else:
+        full_description = f"{description}\n\n#Fakten #Trivia #Wissen #Lernen #Doku"
     if tags:
         full_description += "\n" + " ".join(f"#{t}" for t in tags[:5])
 
@@ -83,7 +88,7 @@ def upload_short(
         "snippet": {
             "title": title,
             "description": full_description,
-            "tags": tags + ["Shorts", "Fakten", "Trivia", "Wissen"],
+            "tags": tags + (["Shorts"] if is_short else []) + ["Fakten", "Trivia", "Wissen"],
             "categoryId": category_id,
             "defaultLanguage": "de",
             "defaultAudioLanguage": "de",

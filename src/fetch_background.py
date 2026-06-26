@@ -28,11 +28,12 @@ DEFAULT_QUERIES = ["abstract background", "particles", "gradient motion", "neon 
 _HEADERS_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) YouTubeShortsBot/1.0"
 
 
-def _search_pexels(query: str, api_key: str, limit: int = 8) -> list[str]:
-    """Returns up to `limit` portrait video file URLs for the query."""
+def _search_pexels(query: str, api_key: str, limit: int = 8,
+                   orientation: str = "portrait") -> list[str]:
+    """Returns up to `limit` video file URLs for the query in the given orientation."""
     params = urllib.parse.urlencode({
         "query": query,
-        "orientation": "portrait",
+        "orientation": orientation,
         "size": "medium",
         "per_page": 15,
     })
@@ -48,12 +49,15 @@ def _search_pexels(query: str, api_key: str, limit: int = 8) -> list[str]:
         print(f"Pexels-Suche fehlgeschlagen ('{query}'): {e}")
         return []
 
+    portrait = orientation == "portrait"
     urls = []
     for video in data.get("videos", []):
-        candidates = [
-            f for f in video.get("video_files", [])
-            if f.get("height", 0) >= 1280 and f.get("width", 1) < f.get("height", 1)
-        ]
+        if portrait:
+            candidates = [f for f in video.get("video_files", [])
+                          if f.get("height", 0) >= 1280 and f.get("width", 1) < f.get("height", 1)]
+        else:
+            candidates = [f for f in video.get("video_files", [])
+                          if f.get("height", 0) >= 720 and f.get("width", 1) > f.get("height", 1)]
         if candidates:
             best = min(candidates, key=lambda f: f["height"])  # smallest HD = fast DL
             urls.append(best["link"])
@@ -74,9 +78,9 @@ def _download(url: str, output_path: str) -> str | None:
 
 
 def fetch_background_clips(category: str, output_dir: str, count: int = 5,
-                          tags: list[str] = None) -> list[str]:
+                          tags: list[str] = None, orientation: str = "portrait") -> list[str]:
     """
-    Downloads up to `count` distinct portrait clips for the category.
+    Downloads up to `count` distinct clips for the category in the given orientation.
     Returns a list of local file paths (possibly empty).
     """
     api_key = os.environ.get("PEXELS_API_KEY")
@@ -90,7 +94,7 @@ def fetch_background_clips(category: str, output_dir: str, count: int = 5,
     # Collect candidate URLs across queries until we have enough
     seen, urls = set(), []
     for q in queries:
-        for u in _search_pexels(q, api_key):
+        for u in _search_pexels(q, api_key, orientation=orientation):
             if u not in seen:
                 seen.add(u)
                 urls.append(u)
