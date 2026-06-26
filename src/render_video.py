@@ -115,16 +115,6 @@ def _gradient_png(top_rgb, bottom_rgb, path):
     return path
 
 
-def _scrim_png(path):
-    img = Image.new("RGBA", (VIDEO_WIDTH, VIDEO_HEIGHT), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, VIDEO_WIDTH, VIDEO_HEIGHT], fill=(0, 0, 0, 90))
-    d.rectangle([0, 0, VIDEO_WIDTH, 340], fill=(0, 0, 0, 70))
-    d.rectangle([0, VIDEO_HEIGHT - 360, VIDEO_WIDTH, VIDEO_HEIGHT], fill=(0, 0, 0, 70))
-    img.save(path)
-    return path
-
-
 def _wrap(draw, text, font, max_w):
     words, lines, cur = text.split(), [], ""
     for w in words:
@@ -140,46 +130,46 @@ def _wrap(draw, text, font, max_w):
     return lines
 
 
-def _title_png(fact, path):
-    img = Image.new("RGBA", (VIDEO_WIDTH, VIDEO_HEIGHT), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
+def _draw_scrim(d):
+    d.rectangle([0, 0, VIDEO_WIDTH, VIDEO_HEIGHT], fill=(0, 0, 0, 90))
+    d.rectangle([0, 0, VIDEO_WIDTH, 340], fill=(0, 0, 0, 70))
+    d.rectangle([0, VIDEO_HEIGHT - 360, VIDEO_WIDTH, VIDEO_HEIGHT], fill=(0, 0, 0, 70))
+
+
+def _draw_title(d, fact):
     badge_font = _find_font(40)
     title_font = _find_font(58)
-
     badge = _strip_emoji(fact.get("category", "")).upper()
     if badge:
         bw = d.textlength(badge, font=badge_font)
         bx = (VIDEO_WIDTH - bw) / 2
         d.rounded_rectangle([bx - 28, 120, bx + bw + 28, 188], radius=20, fill=(255, 215, 0))
         d.text((bx, 130), badge, font=badge_font, fill=(0, 0, 0))
-
     title = _strip_emoji(fact.get("title", ""))
-    lines = _wrap(d, title, title_font, VIDEO_WIDTH - 140)
     y = 220
-    for line in lines:
+    for line in _wrap(d, title, title_font, VIDEO_WIDTH - 140):
         w = d.textlength(line, font=title_font)
-        x = (VIDEO_WIDTH - w) / 2
-        d.text((x, y), line, font=title_font, fill=(255, 255, 255),
+        d.text(((VIDEO_WIDTH - w) / 2, y), line, font=title_font, fill=(255, 255, 255),
                stroke_width=4, stroke_fill=(0, 0, 0))
         y += 72
-    img.save(path)
-    return path
 
 
-def _caption_png(text, path):
+def _overlay_frame(fact, caption_text, path):
+    """One full-frame RGBA overlay: dark scrim + title + current caption."""
     img = Image.new("RGBA", (VIDEO_WIDTH, VIDEO_HEIGHT), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    font = _find_font(86)
-    lines = _wrap(d, text.upper(), font, VIDEO_WIDTH - 160)
-    line_h = 104
-    block_h = len(lines) * line_h
-    y = (VIDEO_HEIGHT - block_h) / 2 + 120
-    for line in lines:
-        w = d.textlength(line, font=font)
-        x = (VIDEO_WIDTH - w) / 2
-        d.text((x, y), line, font=font, fill=(255, 255, 255),
-               stroke_width=9, stroke_fill=(0, 0, 0))
-        y += line_h
+    _draw_scrim(d)
+    _draw_title(d, fact)
+    if caption_text:
+        font = _find_font(86)
+        lines = _wrap(d, caption_text.upper(), font, VIDEO_WIDTH - 160)
+        line_h = 104
+        y = (VIDEO_HEIGHT - len(lines) * line_h) / 2 + 120
+        for line in lines:
+            w = d.textlength(line, font=font)
+            d.text(((VIDEO_WIDTH - w) / 2, y), line, font=font, fill=(255, 255, 255),
+                   stroke_width=9, stroke_fill=(0, 0, 0))
+            y += line_h
     img.save(path)
     return path
 
@@ -260,34 +250,41 @@ def render_video(fact: dict, audio_path: str, output_path: str,
             f"y='(in_h-{VIDEO_HEIGHT})/2+cos(t/6)*60',setsar=1[bg]"
         )
 
-    # ----- overlay layers -----
-    scrim = _scrim_png(str(work / "scrim.png"))
-    title = _title_png(fact, str(work / "title.png"))
+    # ----- overlay track (scrim + title + captions) as ONE timed image stream -----
     captions = _group_captions(words or [], total=total) if words else []
-    cap_paths = [_caption_png(c["text"], str(work / f"cap_{i}.png"))
-                 for i, c in enumerate(captions)]
+    if not captions:
+        captions = [{"text": "", "start": 0.0, "end": total}]
 
-    cmd = ["ffmpeg", "-y"] + bg_input
-    cmd += ["-loop", "1"] + t_arg + ["-i", scrim]      # 1
-    cmd += ["-loop", "1"] + t_arg + ["-i", title]      # 2
-    for p in cap_paths:                                # 3..N
-        cmd += ["-loop", "1"] + t_arg + ["-i", p]
-    cmd += ["-i", audio_path]                          # last
-    audio_idx = 3 + len(cap_paths)
-
-    parts = [bg_filter, "[bg][1:v]overlay[d]", "[d][2:v]overlay[base]"]
-    last = "base"
+    # Render one full-frame overlay PNG per caption window
+    frames = []
     for i, c in enumerate(captions):
-        out = f"c{i}"
-        parts.append(
-            f"[{last}][{3 + i}:v]overlay=enable='between(t,{c['start']:.2f},{c['end']:.2f})'[{out}]"
-        )
-        last = out
-    filter_complex = ";".join(parts)
+        p = _overlay_frame(fact, c["text"], str(work / f"ov_{i}.png"))
+        dur = max(0.1, c["end"] - c["start"])
+        frames.append((p, dur))
+
+    # concat-demuxer list (last entry repeated so its duration applies)
+    list_path = work / "frames.txt"
+    lines = []
+    for p, dur in frames:
+        lines.append(f"file '{p}'")
+        lines.append(f"duration {dur:.3f}")
+    lines.append(f"file '{frames[-1][0]}'")  # required final repeat
+    list_path.write_text("\n".join(lines))
+
+    # ----- final compose: background + overlay track + audio (only 3 inputs) -----
+    cmd = ["ffmpeg", "-y"] + bg_input
+    cmd += ["-f", "concat", "-safe", "0", "-i", str(list_path)]   # 1: overlay frames
+    cmd += ["-i", audio_path]                                     # 2: audio
+
+    filter_complex = (
+        bg_filter
+        + ";[1:v]fps=30,format=rgba,setsar=1[ov]"
+        + ";[bg][ov]overlay=eof_action=pass:format=auto[v]"
+    )
 
     cmd += [
         "-filter_complex", filter_complex,
-        "-map", f"[{last}]", "-map", f"{audio_idx}:a",
+        "-map", "[v]", "-map", "2:a",
         "-c:v", "libx264", "-preset", "fast", "-crf", "23",
         "-c:a", "aac", "-b:a", "192k",
         "-pix_fmt", "yuv420p", "-r", "30",
