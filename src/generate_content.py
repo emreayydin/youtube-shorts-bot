@@ -9,24 +9,29 @@ CATEGORIES = [
     "Weltrekorde", "Psychologie", "Astronomie", "Biologie",
 ]
 
-PROMPT_TEMPLATE = """Du bist ein Trivia-Experte für YouTube Shorts.
+PROMPT_TEMPLATE = """Du bist Experte für virale YouTube Shorts und schreibst fesselnde Trivia.
 
 Erstelle einen einzelnen, faszinierenden Fakt über das Thema: {category}
 
-Regeln:
-- Maximal 150 Wörter
-- Beginne mit einer packenden Aussage (kein "Wusstest du?")
-- Überraschend, unbekannt, aber wahr
-- Sprich direkt den Zuschauer an
-- Ende mit einem Cliffhanger-Satz der neugierig macht
-- Sprache: Deutsch
+Die ersten 2 Sekunden entscheiden alles. Der HOOK muss ein Pattern-Interrupt sein:
+- Maximal 8 Wörter, extrem zugespitzt
+- Erzeugt eine Wissenslücke ("Curiosity Gap") die man füllen MUSS
+- Niemals "Wusstest du?" oder "Stell dir vor"
+- Gute Muster: schockierende Zahl, scheinbarer Widerspruch, "Das ist verboten weil…", "Niemand glaubt dass…"
+
+Body-Regeln:
+- Maximal 130 Wörter, in kurzen gesprochenen Sätzen
+- Steigt sofort ein, kein Aufwärmen
+- Überraschend, unbekannt, aber faktisch wahr
+- Baut Spannung auf, löst sie erst spät auf
+- Sprache: Deutsch, direkte Ansprache (du)
 
 Antworte NUR mit einem JSON-Objekt:
 {{
-  "title": "Kurzer, clickbait-artiger Titel (max 60 Zeichen)",
-  "hook": "Erster Satz zum Einhaken (max 15 Wörter)",
+  "title": "Clickbait-Titel mit Zahl oder Widerspruch (max 60 Zeichen)",
+  "hook": "Schock-Hook, max 8 Wörter",
   "body": "Haupttext des Fakts",
-  "cta": "Call-to-action Satz",
+  "cta": "Kurzer Aufruf zu Folgen/Kommentieren",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "category": "{category}"
 }}"""

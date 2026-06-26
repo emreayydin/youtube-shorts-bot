@@ -19,8 +19,8 @@ except ImportError:
 
 from generate_compilation import generate_compilation
 from text_to_speech import build_narration
-from render_long import render_long
-from upload_youtube import upload_short
+from render_long import render_long, make_thumbnail
+from upload_youtube import upload_short, set_thumbnail
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s",
                     handlers=[logging.StreamHandler(sys.stdout)])
@@ -55,19 +55,44 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     render_long(comp, audio_path, sections, video_path)
     log.info(f"Video: {video_path}")
 
+    # Thumbnail for higher click-through
+    thumb_path = str(OUTPUT_DIR / f"long_thumb_{ts}.png")
+    make_thumbnail(comp, thumb_path)
+
+    # Description with clickable chapters (better watch time + SEO)
+    desc = _build_description(comp, sections)
+
     if dry_run:
         log.info(f"[DRY RUN] Nicht hochgeladen: {video_path}")
+        log.info(f"[DRY RUN] Thumbnail: {thumb_path}")
         return video_path
 
     log.info(f"Lade hoch (privacy={privacy})...")
-    desc = comp["intro"] + "\n\n" + "\n".join(
-        f"{i}. {f['headline']}" for i, f in enumerate(comp["facts"], 1))
     video_id = upload_short(
         video_path=video_path, title=comp["title"], description=desc,
         tags=comp.get("tags", []), privacy=privacy, is_short=False,
     )
+    set_thumbnail(video_id, thumb_path)
     log.info(f"Fertig! https://youtu.be/{video_id}")
     return video_id
+
+
+def _fmt_ts(seconds: float) -> str:
+    m, s = divmod(int(seconds), 60)
+    return f"{m}:{s:02d}"
+
+
+def _build_description(comp: dict, sections: list[dict]) -> str:
+    """Builds a description with YouTube chapter timestamps (must start at 0:00)."""
+    fact_sections = [s for s in sections if s["label"].startswith("fact_")]
+    lines = [comp["intro"], "", "⏱️ Kapitel:", "0:00 Intro"]
+    for i, s in enumerate(fact_sections):
+        headline = comp["facts"][i]["headline"]
+        lines.append(f"{_fmt_ts(s['start'])} {i + 1}. {headline}")
+    outro = next((s for s in sections if s["label"] == "outro"), None)
+    if outro:
+        lines.append(f"{_fmt_ts(outro['start'])} Fazit")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

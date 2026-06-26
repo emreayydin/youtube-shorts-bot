@@ -116,6 +116,47 @@ def _outro_card(comp, path):
     return path
 
 
+def make_thumbnail(comp: dict, path: str) -> str:
+    """Generates a 1280x720 YouTube thumbnail for the compilation."""
+    TW, TH = 1280, 720
+    top, bottom = CATEGORY_COLORS.get(comp.get("category", ""), DEFAULT_COLORS)
+    img = Image.new("RGB", (TW, TH), top)
+    layer = Image.new("RGB", (TW, TH), bottom)
+    mask = Image.new("L", (TW, TH))
+    mask.putdata([int(255 * (y / TH)) for y in range(TH) for _ in range(TW)])
+    img.paste(layer, (0, 0), mask)
+    d = ImageDraw.Draw(img)
+
+    n = len(comp["facts"])
+    # giant number, right-aligned with margin so it never clips
+    big = _find_font(380)
+    num = str(n)
+    nw = d.textlength(num, font=big)
+    nx = TW - nw - 60
+    ny = (TH - 380) / 2 + 20
+    d.text((nx, ny), num, font=big, fill=(255, 210, 63),
+           stroke_width=12, stroke_fill=(0, 0, 0))
+
+    # category badge
+    cat_f = _find_font(46)
+    cat = _strip_emoji(comp.get("category", "")).upper()
+    if cat:
+        cw = d.textlength(cat, font=cat_f)
+        d.rounded_rectangle([60, 70, 60 + cw + 48, 150], radius=18, fill=(255, 210, 63))
+        d.text((84, 84), cat, font=cat_f, fill=(11, 20, 55))
+
+    # title (big, left)
+    title_f = _find_font(88)
+    lines = _wrap(d, _strip_emoji(comp["title"]), title_f, 700)
+    y = 210
+    for line in lines[:4]:
+        d.text((64, y), line, font=title_f, fill=(255, 255, 255),
+               stroke_width=6, stroke_fill=(0, 0, 0))
+        y += 104
+    img.save(path)
+    return path
+
+
 def _build_montage(clips, out_path):
     """Concatenates clips (SEG seconds each) once into a base montage to be looped."""
     durations = {c: _probe_duration(c) for c in clips}

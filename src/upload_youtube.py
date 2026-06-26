@@ -109,8 +109,24 @@ def upload_short(
             print(f"Upload: {int(status.progress() * 100)}%")
 
     video_id = response["id"]
-    print(f"Video hochgeladen: https://youtube.com/shorts/{video_id}")
+    print(f"Video hochgeladen: https://youtube.com/watch?v={video_id}")
     return video_id
+
+
+def set_thumbnail(video_id: str, thumbnail_path: str) -> bool:
+    """Sets a custom thumbnail for a video. Returns True on success."""
+    try:
+        youtube = get_youtube_service()
+        youtube.thumbnails().set(
+            videoId=video_id,
+            media_body=MediaFileUpload(thumbnail_path, mimetype="image/png"),
+        ).execute()
+        print(f"Thumbnail gesetzt für {video_id}")
+        return True
+    except Exception as e:
+        # Needs a verified channel; if it fails, the video keeps its auto-thumbnail
+        print(f"Thumbnail konnte nicht gesetzt werden ({e}). Video bleibt bei Auto-Thumbnail.")
+        return False
 
 
 if __name__ == "__main__":
