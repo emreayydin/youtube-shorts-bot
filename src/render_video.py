@@ -24,7 +24,8 @@ from fetch_background import fetch_background_clips
 
 VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
-SEGMENT = 2.5          # seconds per clip before a hard cut
+SEGMENT = 1.7          # seconds per clip before a hard cut (faster = more dynamic)
+ZOOM_PER_SEG = 0.16    # how much each clip zooms in over its segment (Ken-Burns push)
 
 CATEGORY_COLORS = {
     "Wissenschaft":  ((13, 27, 42),   (27, 79, 114)),
@@ -184,6 +185,9 @@ def _build_montage(clips: list[str], total: float, out_path: str) -> str:
     n_segments = max(1, math.ceil(total / SEGMENT))
     usage = {c: 0 for c in clips}
 
+    seg_frames = max(1, int(SEGMENT * 30))
+    zin = ZOOM_PER_SEG / seg_frames  # zoom increment per frame for a smooth push
+
     inputs, filters, labels = [], [], []
     for i in range(n_segments):
         clip = clips[i % len(clips)]
@@ -195,9 +199,18 @@ def _build_montage(clips: list[str], total: float, out_path: str) -> str:
 
         inputs += ["-ss", f"{start:.2f}", "-t", f"{SEGMENT:.2f}", "-i", clip]
         lbl = f"v{i}"
+        # Alternate push-in / pull-out per clip for rhythm; hard cut resets it.
+        if i % 2 == 0:
+            zexpr = f"min(zoom+{zin:.5f},{1 + ZOOM_PER_SEG:.3f})"
+        else:
+            zexpr = f"if(eq(on,0),{1 + ZOOM_PER_SEG:.3f},max(zoom-{zin:.5f},1.0))"
         filters.append(
-            f"[{i}:v]scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=increase,"
-            f"crop={VIDEO_WIDTH}:{VIDEO_HEIGHT},setsar=1,fps=30,format=yuv420p[{lbl}]"
+            f"[{i}:v]fps=30,"  # normalize fps FIRST so every segment is exactly SEG seconds
+            f"scale={int(VIDEO_WIDTH*1.3)}:{int(VIDEO_HEIGHT*1.3)}:force_original_aspect_ratio=increase,"
+            f"crop={int(VIDEO_WIDTH*1.3)}:{int(VIDEO_HEIGHT*1.3)},"
+            f"zoompan=z='{zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+            f"s={VIDEO_WIDTH}x{VIDEO_HEIGHT}:fps=30,"
+            f"setsar=1,format=yuv420p[{lbl}]"
         )
         labels.append(f"[{lbl}]")
 
