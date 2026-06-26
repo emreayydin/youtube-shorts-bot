@@ -11,3 +11,7 @@ __pycache__/
 *.mp4
 *.json
 !requirements.txt
+
+# Kein VS-Code-Extension-Paket / OS-Müll
+*.vsix
+.DS_Store
