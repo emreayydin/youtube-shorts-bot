@@ -173,8 +173,8 @@ def _build_montage(clips, out_path):
     concat = "".join(labels) + f"concat=n={len(clips)}:v=1:a=0[bg]"
     cmd = ["ffmpeg", "-y"] + inputs + [
         "-filter_complex", ";".join(filters + [concat]), "-map", "[bg]",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
-        "-pix_fmt", "yuv420p", "-r", "30", "-an", out_path]
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+        "-pix_fmt", "yuv420p", "-r", "30", "-an", "-threads", "0", out_path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
         raise RuntimeError(f"Montage failed:\n{r.stderr[-2000:]}")
@@ -189,7 +189,7 @@ def render_long(comp: dict, audio_path: str, sections: list[dict], output_path: 
 
     # ---- background ----
     clips = fetch_background_clips(comp.get("category", ""), str(work / "clips"),
-                                   count=12, tags=comp.get("tags"), orientation="landscape")
+                                   count=8, tags=comp.get("tags"), orientation="landscape")
     if clips:
         base = _build_montage(clips, str(work / "base.mp4"))
         bg_input = ["-stream_loop", "-1", "-i", base]
@@ -239,8 +239,11 @@ def render_long(comp: dict, audio_path: str, sections: list[dict], output_path: 
     cmd += [
         "-filter_complex", ";".join(parts),
         "-map", f"[{last}]", "-map", f"{audio_idx}:a",
-        "-c:v", "libx264", "-preset", "fast", "-crf", "22",
+        # ultrafast: GitHub's 2-core runner is slow at libx264; YouTube re-encodes
+        # anyway, so the larger ultrafast file costs us nothing in final quality.
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
         "-c:a", "aac", "-b:a", "192k", "-pix_fmt", "yuv420p", "-r", "30",
+        "-threads", "0",
         "-t", f"{total:.2f}", "-shortest", output_path]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
