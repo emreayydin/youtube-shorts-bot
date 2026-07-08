@@ -231,10 +231,46 @@ def _build_montage(clips: list[str], total: float, out_path: str) -> str:
     return out_path
 
 
+# ---------- AI-image background ----------
+
+def _img_segment(img: str, dur: float, out: str, zoom_in: bool = True):
+    frames = max(1, int(dur * 30))
+    inc = 0.14 / frames
+    z = (f"min(zoom+{inc:.6f},1.14)" if zoom_in
+         else f"if(eq(on,0),1.14,max(zoom-{inc:.6f},1.0))")
+    vf = (f"scale={int(VIDEO_WIDTH*1.3)}:{int(VIDEO_HEIGHT*1.3)}:force_original_aspect_ratio=increase,"
+          f"crop={int(VIDEO_WIDTH*1.3)}:{int(VIDEO_HEIGHT*1.3)},"
+          f"zoompan=z='{z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+          f"s={VIDEO_WIDTH}x{VIDEO_HEIGHT}:fps=30,setsar=1,format=yuv420p")
+    subprocess.run(["ffmpeg", "-y", "-loop", "1", "-framerate", "30", "-t", f"{dur:.2f}",
+                    "-i", img, "-vf", vf, "-c:v", "libx264", "-preset", "veryfast",
+                    "-crf", "23", "-pix_fmt", "yuv420p", "-r", "30", "-t", f"{dur:.2f}", out],
+                   capture_output=True, text=True, check=True)
+
+
+def _build_timed_bg(images: list[str], total: float, work, out_path: str) -> str:
+    """Shows each image for an equal slice of `total`, Ken-Burns alternating, concat."""
+    imgs = [i for i in images if i]
+    if not imgs:
+        raise RuntimeError("keine KI-Bilder")
+    per = total / len(imgs)
+    parts = []
+    for idx, img in enumerate(imgs):
+        seg = str(work / f"aiseg_{idx}.mp4")
+        _img_segment(img, per, seg, zoom_in=(idx % 2 == 0))
+        parts.append(seg)
+    lst = work / "aisegs.txt"
+    lst.write_text("\n".join(f"file '{p}'" for p in parts))
+    subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
+                    "-c", "copy", out_path], capture_output=True, text=True, check=True)
+    return out_path
+
+
 # ---------- compose ----------
 
 def render_video(fact: dict, audio_path: str, output_path: str,
-                 words: list[dict] = None, background_video: str = None) -> str:
+                 words: list[dict] = None, background_video: str = None,
+                 ai_images: list[str] = None) -> str:
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="short_"))
 
@@ -242,13 +278,23 @@ def render_video(fact: dict, audio_path: str, output_path: str,
     if total <= 0:
         total = 50.0
 
-    # ----- background -----
-    clips = [background_video] if background_video else \
+    # ----- background: AI images (preferred) -> Pexels montage -> gradient -----
+    ai_bg = None
+    if ai_images and any(ai_images):
+        try:
+            ai_bg = _build_timed_bg(ai_images, total, work, str(work / "aibg.mp4"))
+        except Exception as e:
+            print(f"KI-Hintergrund fehlgeschlagen ({e}) — nutze Pexels.")
+
+    clips = [] if ai_bg else ([background_video] if background_video else
         fetch_background_clips(fact.get("category", ""), str(work / "clips"),
-                               count=6, tags=fact.get("tags"))
+                               count=6, tags=fact.get("tags")))
 
     t_arg = ["-t", f"{total:.2f}"]
-    if clips:
+    if ai_bg:
+        bg_input = ["-i", ai_bg]
+        bg_filter = f"[0:v]setsar=1[bg]"
+    elif clips:
         bg = _build_montage(clips, total, str(work / "montage.mp4"))
         bg_input = ["-i", bg]
         bg_filter = f"[0:v]setsar=1[bg]"

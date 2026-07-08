@@ -50,11 +50,24 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     words = generate_audio(tts_text, audio_path)
     log.info(f"Audio: {audio_path} ({len(words)} Wörter)")
 
+    # 2b. AI images illustrating the fact (falls FAL_KEY gesetzt; sonst Pexels)
+    ai_images = None
+    if os.environ.get("FAL_KEY") and fact.get("image_prompts"):
+        try:
+            from generate_visuals import images_for_prompts
+            log.info("Generiere KI-Bilder (Flux)...")
+            ai_images = images_for_prompts(fact["image_prompts"],
+                                           str(OUTPUT_DIR / f"visuals_{timestamp}"),
+                                           orientation="portrait")
+        except Exception as e:
+            log.warning(f"KI-Bilder fehlgeschlagen ({e}) — nutze Pexels.")
+
     # 3. Render video (motion background + animated captions)
     log.info("Rendere Video...")
     video_path = str(OUTPUT_DIR / f"short_{timestamp}.mp4")
     background = os.environ.get("BACKGROUND_VIDEO_PATH")
-    render_video(fact, audio_path, video_path, words=words, background_video=background)
+    render_video(fact, audio_path, video_path, words=words, background_video=background,
+                 ai_images=ai_images)
     log.info(f"Video: {video_path}")
 
     if dry_run:

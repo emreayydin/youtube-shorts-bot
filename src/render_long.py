@@ -202,16 +202,63 @@ def _build_montage(clips, out_path):
     return out_path
 
 
-def render_long(comp: dict, audio_path: str, sections: list[dict], output_path: str) -> str:
+def _img_segment(img, dur, out, zoom_in=True):
+    frames = max(1, int(dur * 30))
+    inc = 0.12 / frames
+    z = (f"min(zoom+{inc:.6f},1.12)" if zoom_in
+         else f"if(eq(on,0),1.12,max(zoom-{inc:.6f},1.0))")
+    vf = (f"scale={int(LW*1.25)}:{int(LH*1.25)}:force_original_aspect_ratio=increase,"
+          f"crop={int(LW*1.25)}:{int(LH*1.25)},"
+          f"zoompan=z='{z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+          f"s={LW}x{LH}:fps=30,setsar=1,format=yuv420p")
+    subprocess.run(["ffmpeg", "-y", "-loop", "1", "-framerate", "30", "-t", f"{dur:.2f}",
+                    "-i", img, "-vf", vf, "-c:v", "libx264", "-preset", "veryfast",
+                    "-crf", "23", "-pix_fmt", "yuv420p", "-r", "30", "-t", f"{dur:.2f}", out],
+                   capture_output=True, text=True, check=True)
+
+
+def _build_sectioned_bg(visuals, sections, work, out_path):
+    parts, last_img = [], None
+    for idx, s in enumerate(sections):
+        dur = max(0.5, s["end"] - s["start"])
+        img = visuals.get(s["label"]) or last_img
+        seg = str(work / f"bg_{idx}.mp4")
+        if img is None:
+            top, bottom = DEFAULT_COLORS
+            img = _gradient(top, bottom, str(work / "bgfallback.png"))
+        _img_segment(img, dur, seg, zoom_in=(idx % 2 == 0))
+        if visuals.get(s["label"]):
+            last_img = visuals[s["label"]]
+        parts.append(seg)
+    lst = work / "bgsegs.txt"
+    lst.write_text("\n".join(f"file '{p}'" for p in parts))
+    subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
+                    "-c", "copy", out_path], capture_output=True, text=True, check=True)
+    return out_path
+
+
+def render_long(comp: dict, audio_path: str, sections: list[dict], output_path: str,
+                visuals: dict = None) -> str:
     """sections: [{label, start, end}] from build_narration (intro/fact_i/outro)."""
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="long_"))
     total = max(s["end"] for s in sections) + 0.5
 
-    # ---- background ----
-    clips = fetch_background_clips(comp.get("category", ""), str(work / "clips"),
-                                   count=14, tags=comp.get("tags"), orientation="landscape")
-    if clips:
+    # ---- background: AI images per section (preferred) -> Pexels -> gradient ----
+    ai_bg = None
+    if visuals:
+        try:
+            ai_bg = _build_sectioned_bg(visuals, sections, work, str(work / "aibg.mp4"))
+        except Exception as e:
+            print(f"AI-Hintergrund fehlgeschlagen ({e}) — nutze Pexels.")
+
+    clips = [] if ai_bg else fetch_background_clips(
+        comp.get("category", ""), str(work / "clips"), count=14,
+        tags=comp.get("tags"), orientation="landscape")
+    if ai_bg:
+        bg_input = ["-i", ai_bg]
+        bg_filter = f"[0:v]scale={LW}:{LH},setsar=1[bg]"
+    elif clips:
         base = _build_montage(clips, str(work / "base.mp4"))
         bg_input = ["-stream_loop", "-1", "-i", base]
         bg_filter = f"[0:v]scale={LW}:{LH},setsar=1[bg]"

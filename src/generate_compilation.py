@@ -21,13 +21,18 @@ Regeln:
 WICHTIG für gültiges JSON: Verwende NIEMALS doppelte Anführungszeichen (") innerhalb
 der Texte — nutze stattdessen einfache (') oder gar keine. Keine Zeilenumbrüche in Werten.
 
+BILD-PROMPTS (image_prompt / hook_visual): englische, cinematische KI-Bild-Prompts,
+die den jeweiligen Inhalt illustrieren (Motiv, Schauplatz, Stimmung, Licht) — passend
+zum Thema. KEINE Prominenten/Marken/Logos, KEIN Text im Bild.
+
 Antworte NUR mit einem JSON-Objekt (keine Erklärung, kein Markdown):
 {{
   "title": "Clickbait-Titel (max 70 Zeichen)",
   "topic": "Kurzes Thema (1-3 Wörter)",
   "intro": "Intro-Text",
+  "hook_visual": "englischer cinematischer Bild-Prompt zum Thema",
   "facts": [
-    {{"headline": "Kurze Überschrift (max 40 Zeichen)", "text": "Fakt-Text 60-80 Wörter"}}
+    {{"headline": "Kurze Überschrift (max 40 Zeichen)", "text": "Fakt-Text 60-80 Wörter", "image_prompt": "englischer cinematischer Bild-Prompt"}}
   ],
   "outro": "Outro-Text",
   "tags": ["tag1","tag2","tag3","tag4","tag5"],
