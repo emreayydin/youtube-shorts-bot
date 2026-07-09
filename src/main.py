@@ -29,14 +29,54 @@ log = logging.getLogger(__name__)
 
 OUTPUT_DIR = Path("output")
 
+# Long-form videos publish on these UTC weekdays (Mon=0 … Sun=6): Tue, Thu, Sun.
+LONG_VIDEO_WEEKDAYS = {1, 3, 6}
+
+# Self-throttle so the bot paces itself even though GitHub's free cron fires
+# unreliably. The shorts workflow is scheduled far more often than needed (every
+# 2h); these caps decide whether a given run actually uploads. YouTube's free
+# quota = 10,000 units/day, videos.insert = 1,600 → 6 uploads/day max.
+DAILY_UPLOAD_CAP = 6          # total videos (shorts + long) per quota day
+MIN_HOURS_BETWEEN = 3.0       # min spacing between uploads so bursts can't happen
+
+
+def _should_skip_for_quota() -> tuple[bool, str]:
+    """Returns (skip, reason) from the day's upload count and spacing, so dropped
+    cron triggers get 'caught up' by later ones without exceeding quota."""
+    import history
+    from datetime import datetime, timezone
+    total = history.uploads_in_current_window()
+    shorts = history.uploads_in_current_window(kind="short")
+    gap = history.hours_since_last_upload()
+
+    # Reserve one slot for the long-form video on its days (Tue/Thu/Sun).
+    is_long_day = datetime.now(timezone.utc).weekday() in LONG_VIDEO_WEEKDAYS
+    short_cap = DAILY_UPLOAD_CAP - 1 if is_long_day else DAILY_UPLOAD_CAP
+
+    if total >= DAILY_UPLOAD_CAP:
+        return True, f"daily upload cap reached ({total}/{DAILY_UPLOAD_CAP})"
+    if shorts >= short_cap:
+        return True, f"short cap for today reached ({shorts}/{short_cap})"
+    if gap is not None and gap < MIN_HOURS_BETWEEN:
+        return True, f"only {gap:.1f}h since last upload (min {MIN_HOURS_BETWEEN}h)"
+    return False, ""
+
 
 def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     OUTPUT_DIR.mkdir(exist_ok=True)
+    import history
+
+    # Scheduled runs pass no category. Self-throttle only those real uploads;
+    # a manual run (explicit --category) or a dry run is never skipped.
+    if category is None and not dry_run:
+        skip, reason = _should_skip_for_quota()
+        if skip:
+            log.info(f"Überspringe diesen Lauf — {reason}.")
+            return None
 
     # 1. Generate fact (avoiding previously posted topics)
     log.info("Generiere Trivia-Fakt...")
-    import history
     fact = generate_fact(category, avoid=history.recent_titles(40, kind="short"))
     log.info(f"Fakt: {fact['title']}")
 

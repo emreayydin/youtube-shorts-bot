@@ -5,9 +5,14 @@ GitHub Actions workflow, so every run sees what previous runs already produced.
 """
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 HISTORY_FILE = Path(__file__).resolve().parent.parent / "history.json"
+
+# YouTube's daily upload quota resets at midnight US Pacific. We approximate that
+# boundary at 08:00 UTC (exact in winter PST; 1h off in summer PDT — harmless
+# since each window still stays under quota). Used to count uploads per day.
+QUOTA_RESET_UTC_HOUR = 8
 
 
 def _load() -> list[dict]:
@@ -32,11 +37,51 @@ def add_entry(kind: str, title: str, category: str = "") -> None:
     items = _load()
     items.append({
         "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "ts_utc": datetime.now(timezone.utc).isoformat(),  # for quota/spacing logic
         "kind": kind,
         "category": category,
         "title": title,
     })
     HISTORY_FILE.write_text(json.dumps(items[-500:], ensure_ascii=False, indent=2))
+
+
+# ---------- quota / spacing helpers (reliable pacing under a flaky cron) ----------
+
+def _quota_day_key(dt_utc: datetime):
+    return (dt_utc - timedelta(hours=QUOTA_RESET_UTC_HOUR)).date()
+
+
+def _parse_ts(entry: dict):
+    ts = entry.get("ts_utc")
+    if not ts:
+        return None
+    try:
+        d = datetime.fromisoformat(ts)
+        return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+def uploads_in_current_window(kind: str = None) -> int:
+    """How many videos were uploaded in the current quota day (optionally by kind)."""
+    key = _quota_day_key(datetime.now(timezone.utc))
+    n = 0
+    for x in _load():
+        d = _parse_ts(x)
+        if d and _quota_day_key(d) == key and (kind is None or x.get("kind") == kind):
+            n += 1
+    return n
+
+
+def hours_since_last_upload():
+    """Hours since the most recent upload, or None if there is no dated history."""
+    now = datetime.now(timezone.utc)
+    latest = None
+    for x in _load():
+        d = _parse_ts(x)
+        if d and (latest is None or d > latest):
+            latest = d
+    return None if latest is None else (now - latest).total_seconds() / 3600
 
 
 def avoid_block(titles: list[str]) -> str:

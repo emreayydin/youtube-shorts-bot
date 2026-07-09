@@ -2,8 +2,11 @@ name: Daily YouTube Short
 
 on:
   schedule:
-    # Alle 4 Stunden (6x täglich) — 0,4,8,12,16,20 UTC = 2,6,10,14,18,22 Uhr DE
-    - cron: "0 */4 * * *"
+    # Alle 2 Stunden (12 Trigger/Tag). GitHubs kostenloser Cron überspringt/verzögert
+    # Läufe, daher über-planen: main.py drosselt selbst und lädt nur hoch, wenn das
+    # Tageslimit (6) noch nicht erreicht ist UND genug Zeit seit dem letzten Upload
+    # verging (3h). Ergebnis: ~6 Shorts/Tag zuverlässig, ohne das Quota zu sprengen.
+    - cron: "0 */2 * * *"
   workflow_dispatch:
     inputs:
       category:
