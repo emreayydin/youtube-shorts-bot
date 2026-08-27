@@ -2,11 +2,13 @@ name: Daily YouTube Short
 
 on:
   schedule:
-    # Alle 2 Stunden (12 Trigger/Tag). GitHubs kostenloser Cron überspringt/verzögert
-    # Läufe, daher über-planen: main.py drosselt selbst und lädt nur hoch, wenn das
-    # Tageslimit (6) noch nicht erreicht ist UND genug Zeit seit dem letzten Upload
-    # verging (3h). Ergebnis: ~6 Shorts/Tag zuverlässig, ohne das Quota zu sprengen.
-    - cron: "0 */2 * * *"
+    # Stündlich, aber NUR im Tagesfenster 08:00-20:00 UTC (= 10:00-22:00 deutsche
+    # Sommerzeit). Vorher lief der Cron rund um die Uhr, und die Selbstdrosselung
+    # verteilte die sechs Uploads gleichmäßig — also regelmäßig mitten in der
+    # Nacht, wo sie niemand sieht. GitHubs kostenloser Cron überspringt Läufe,
+    # deshalb 13 Trigger für 6 Uploads: main.py drosselt selbst (Tageslimit 6,
+    # Mindestabstand 2h). Gleiches Muster wie muslim-world-bot.
+    - cron: "0 8-20 * * *"
   workflow_dispatch:
     inputs:
       category:

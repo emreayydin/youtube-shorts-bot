@@ -33,11 +33,14 @@ OUTPUT_DIR = Path("output")
 LONG_VIDEO_WEEKDAYS = {1, 3, 6}
 
 # Self-throttle so the bot paces itself even though GitHub's free cron fires
-# unreliably. The shorts workflow is scheduled far more often than needed (every
-# 2h); these caps decide whether a given run actually uploads. YouTube's free
+# unreliably. The shorts workflow is over-scheduled (hourly across the active
+# window); these caps decide whether a given run actually uploads. YouTube's free
 # quota = 10,000 units/day, videos.insert = 1,600 → 6 uploads/day max.
 DAILY_UPLOAD_CAP = 6          # total videos (shorts + long) per quota day
-MIN_HOURS_BETWEEN = 3.0       # min spacing between uploads so bursts can't happen
+# 2h, not 3h: the cron now only fires 08:00-20:00 UTC, a 12h window. At 3h
+# spacing five gaps need 15h and the sixth upload would never fit — the cap
+# would silently become 5/day. Same reasoning as muslim-world-bot.
+MIN_HOURS_BETWEEN = 2.0       # min spacing between uploads so bursts can't happen
 
 
 def _should_skip_for_quota() -> tuple[bool, str]:
