@@ -446,5 +446,12 @@
     "kind": "short",
     "category": "Weltrekorde",
     "title": "Dieser Weltrekord wurde im Schlaf gebrochen"
+  },
+  {
+    "date": "2026-09-03 22:00",
+    "ts_utc": "2026-09-03T22:00:22.716550+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Dieser Neutronenstern dreht sich 716x pro Sekunde"
   }
 ]
