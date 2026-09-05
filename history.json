@@ -488,5 +488,12 @@
     "kind": "short",
     "category": "Geschichte",
     "title": "Dieser Brief löste einen Weltkrieg aus – ungeöffnet"
+  },
+  {
+    "date": "2026-09-05 09:14",
+    "ts_utc": "2026-09-05T09:14:06.664716+00:00",
+    "kind": "short",
+    "category": "Technologie",
+    "title": "Dieser Algorithmus löscht sich selbst – nach einem Fehler"
   }
 ]
