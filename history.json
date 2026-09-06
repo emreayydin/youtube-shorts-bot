@@ -551,5 +551,12 @@
     "kind": "long",
     "category": "Biologie",
     "title": "10 Biologie-Fakten, die dein Körper vor dir verbirgt!"
+  },
+  {
+    "date": "2026-09-06 21:50",
+    "ts_utc": "2026-09-06T21:50:59.497576+00:00",
+    "kind": "short",
+    "category": "Technologie",
+    "title": "Dieser Chip verbraucht mehr Strom als deine Stadt"
   }
 ]
