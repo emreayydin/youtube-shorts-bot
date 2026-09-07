@@ -565,5 +565,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Dieser Mond hat einen Ozean – ohne Sonne"
+  },
+  {
+    "date": "2026-09-07 11:43",
+    "ts_utc": "2026-09-07T11:43:21.143080+00:00",
+    "kind": "short",
+    "category": "Technologie",
+    "title": "Diese KI stirbt – wenn du sie zu oft fragst"
   }
 ]
