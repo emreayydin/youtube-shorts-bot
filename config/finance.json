@@ -1,0 +1,35 @@
+{
+  "stockWatchlist": [
+    {"symbol": "AAPL", "name": "Apple"},
+    {"symbol": "MSFT", "name": "Microsoft"},
+    {"symbol": "NVDA", "name": "NVIDIA"},
+    {"symbol": "AMZN", "name": "Amazon"},
+    {"symbol": "GOOGL", "name": "Alphabet"},
+    {"symbol": "META", "name": "Meta"},
+    {"symbol": "TSLA", "name": "Tesla"},
+    {"symbol": "AVGO", "name": "Broadcom"},
+    {"symbol": "AMD", "name": "AMD"},
+    {"symbol": "NFLX", "name": "Netflix"},
+    {"symbol": "JPM", "name": "JPMorgan Chase"},
+    {"symbol": "V", "name": "Visa"},
+    {"symbol": "MA", "name": "Mastercard"},
+    {"symbol": "LLY", "name": "Eli Lilly"},
+    {"symbol": "COST", "name": "Costco"},
+    {"symbol": "ORCL", "name": "Oracle"},
+    {"symbol": "CRM", "name": "Salesforce"},
+    {"symbol": "ADBE", "name": "Adobe"},
+    {"symbol": "KO", "name": "Coca-Cola"},
+    {"symbol": "WMT", "name": "Walmart"}
+  ],
+  "crypto": {
+    "marketCapUniverse": 50,
+    "excludeStablecoins": true,
+    "minVolume24hUsd": 10000000
+  },
+  "comparison": {
+    "symbol": "SPY",
+    "assetLabel": "an S&P 500 ETF",
+    "initialAmount": 10000,
+    "lookbackYears": 10
+  }
+}

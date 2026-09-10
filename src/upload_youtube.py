@@ -9,13 +9,17 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
+READ_SCOPE = "https://www.googleapis.com/auth/youtube.readonly"
+SCOPES = [UPLOAD_SCOPE]
+VERIFY_SCOPES = [UPLOAD_SCOPE, READ_SCOPE]
 TOKEN_FILE = "youtube_token.json"
 CREDENTIALS_FILE = "client_secrets.json"
 
 
-def get_youtube_service():
+def get_youtube_service(scopes: list[str] | None = None):
     """Authenticates and returns a YouTube API service object."""
+    scopes = scopes or SCOPES
     creds = None
 
     # In GitHub Actions, use service account token from env
@@ -28,12 +32,12 @@ def get_youtube_service():
             token_uri="https://oauth2.googleapis.com/token",
             client_id=token_data.get("client_id"),
             client_secret=token_data.get("client_secret"),
-            scopes=SCOPES,
+            scopes=scopes,
         )
 
     # Local development: use token file
     elif Path(TOKEN_FILE).exists():
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, scopes)
 
     # Refresh if expired
     if creds and creds.expired and creds.refresh_token:
@@ -49,7 +53,7 @@ def get_youtube_service():
                 f"'{CREDENTIALS_FILE}' nicht gefunden. "
                 "Lade deine OAuth2-Credentials von der Google Cloud Console herunter."
             )
-        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, scopes)
         creds = flow.run_local_server(port=0)
         with open(TOKEN_FILE, "w") as f:
             f.write(creds.to_json())
@@ -60,6 +64,27 @@ def get_youtube_service():
     return build("youtube", "v3", credentials=creds)
 
 
+def verify_channel(youtube, expected_channel_id: str) -> dict:
+    """Verify the OAuth identity before an upload can be started.
+
+    YouTube uploads are scoped to the authenticated channel, not to a channel
+    ID supplied in the request. This check catches a token for another Brand
+    Account before a video is created.
+    """
+    response = youtube.channels().list(part="id,snippet", mine=True).execute()
+    channels = response.get("items") or []
+    if not channels:
+        raise RuntimeError("OAuth-Konto liefert keinen eigenen YouTube-Kanal")
+    actual = channels[0]
+    actual_id = actual.get("id")
+    if actual_id != expected_channel_id:
+        title = (actual.get("snippet") or {}).get("title") or "unbekannt"
+        raise RuntimeError(
+            f"Falscher Upload-Kanal: {title} ({actual_id}); erwartet {expected_channel_id}"
+        )
+    return actual
+
+
 def upload_short(
     video_path: str,
     title: str,
@@ -68,6 +93,8 @@ def upload_short(
     category_id: str = "27",  # 27 = Education
     privacy: str = "public",  # "public", "private", or "unlisted"
     is_short: bool = True,    # False = normal long-form video (no #Shorts)
+    expected_channel_id: str | None = None,
+    language: str = "de",
 ) -> str:
     """
     Uploads a video to YouTube. With is_short=True the description carries the
@@ -75,12 +102,23 @@ def upload_short(
     uploaded as a normal long-form video.
     Returns the video ID.
     """
-    youtube = get_youtube_service()
+    youtube = get_youtube_service(VERIFY_SCOPES if expected_channel_id else SCOPES)
+    if expected_channel_id:
+        verify_channel(youtube, expected_channel_id)
 
-    if is_short:
+    language = language if language in {"de", "en"} else "en"
+    if language == "en" and is_short:
+        full_description = f"{description}\n\n#Shorts #Markets #Investing #Finance #Money"
+        default_tags = ["Markets", "Investing", "Finance", "Money"]
+    elif language == "en":
+        full_description = f"{description}\n\n#Markets #Investing #Finance #Money"
+        default_tags = ["Markets", "Investing", "Finance", "Money"]
+    elif is_short:
         full_description = f"{description}\n\n#Shorts #Fakten #Trivia #Wissen #Lernen"
+        default_tags = ["Fakten", "Trivia", "Wissen"]
     else:
         full_description = f"{description}\n\n#Fakten #Trivia #Wissen #Lernen #Doku"
+        default_tags = ["Fakten", "Trivia", "Wissen"]
     if tags:
         full_description += "\n" + " ".join(f"#{t}" for t in tags[:5])
 
@@ -88,10 +126,10 @@ def upload_short(
         "snippet": {
             "title": title,
             "description": full_description,
-            "tags": tags + (["Shorts"] if is_short else []) + ["Fakten", "Trivia", "Wissen"],
+            "tags": tags + (["Shorts"] if is_short else []) + default_tags,
             "categoryId": category_id,
-            "defaultLanguage": "de",
-            "defaultAudioLanguage": "de",
+            "defaultLanguage": language,
+            "defaultAudioLanguage": language,
         },
         "status": {
             "privacyStatus": privacy,
@@ -132,5 +170,6 @@ def set_thumbnail(video_id: str, thumbnail_path: str) -> bool:
 if __name__ == "__main__":
     # Run authentication flow locally
     print("Starte YouTube-Authentifizierung...")
-    get_youtube_service()
+    scopes = VERIFY_SCOPES if os.environ.get("CHANNEL_MODE", "").lower() == "difference_money" else SCOPES
+    get_youtube_service(scopes)
     print("Authentifizierung erfolgreich!")

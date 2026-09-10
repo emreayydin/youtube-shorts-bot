@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-# Load .env file if present (so ANTHROPIC_API_KEY is picked up automatically)
+# Load .env file if present for optional local configuration.
 try:
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -15,6 +15,7 @@ except ImportError:
     pass
 
 from generate_content import generate_fact
+from channel_config import active_channel, channel_verification_enabled
 from text_to_speech import generate_audio
 from render_video import render_video
 from upload_youtube import upload_short
@@ -69,6 +70,9 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     OUTPUT_DIR.mkdir(exist_ok=True)
     import history
+    channel = active_channel()
+    content_mode = os.environ.get("CONTENT_MODE", "trivia").strip().lower()
+    ranking_kind = os.environ.get("RANKING_KIND", "stocks").strip().lower()
 
     # Scheduled runs pass no category. Self-throttle only those real uploads;
     # a manual run (explicit --category) or a dry run is never skipped.
@@ -78,10 +82,27 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
             log.info(f"Überspringe diesen Lauf — {reason}.")
             return None
 
-    # 1. Generate fact (avoiding previously posted topics)
-    log.info("Generiere Trivia-Fakt...")
-    fact = generate_fact(category, avoid=history.recent_titles(40, kind="short"))
-    log.info(f"Fakt: {fact['title']}")
+    # 1. Generate content (avoiding repeated trivia; finance numbers are fetched
+    # and ranked deterministically before any narration is built).
+    if content_mode == "finance":
+        if channel["mode"] == "difference_money" or os.environ.get("VIDEO_FORMAT", "").strip().lower() == "comparison":
+            from finance_ranking import generate_comparison
+            log.info("Lese historische Vergleichsdaten (read-only)...")
+            fact = generate_comparison()
+            log.info(f"Comparison: {fact['title']}")
+        else:
+            from finance_ranking import generate_ranking
+            if ranking_kind not in {"stocks", "crypto"}:
+                raise ValueError("RANKING_KIND muss 'stocks' oder 'crypto' sein")
+            log.info(f"Lese {ranking_kind}-Ranking (read-only)...")
+            fact = generate_ranking(ranking_kind)
+            log.info(f"Ranking: {fact['title']}")
+    elif content_mode == "trivia":
+        log.info("Generiere Trivia-Fakt...")
+        fact = generate_fact(category, avoid=history.recent_titles(40, kind="short"))
+        log.info(f"Fakt: {fact['title']}")
+    else:
+        raise ValueError("CONTENT_MODE muss 'trivia' oder 'finance' sein")
 
     fact_path = OUTPUT_DIR / f"fact_{timestamp}.json"
     fact_path.write_text(json.dumps(fact, ensure_ascii=False, indent=2))
@@ -90,7 +111,9 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     log.info("Generiere Audio...")
     tts_text = f"{fact['hook']}. {fact['body']} {fact['cta']}"
     audio_path = str(OUTPUT_DIR / f"audio_{timestamp}.mp3")
-    words = generate_audio(tts_text, audio_path)
+    tts_voice = os.environ.get("TTS_VOICE", channel.get("voice"))
+    tts_rate = os.environ.get("TTS_RATE", "+8%")
+    words = generate_audio(tts_text, audio_path, voice=tts_voice, rate=tts_rate)
     log.info(f"Audio: {audio_path} ({len(words)} Wörter)")
 
     # 2b. AI images illustrating the fact (falls FAL_KEY gesetzt; sonst Pexels)
@@ -108,9 +131,13 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     # 3. Render video (motion background + animated captions)
     log.info("Rendere Video...")
     video_path = str(OUTPUT_DIR / f"short_{timestamp}.mp4")
-    background = os.environ.get("BACKGROUND_VIDEO_PATH")
-    render_video(fact, audio_path, video_path, words=words, background_video=background,
-                 ai_images=ai_images)
+    if fact.get("video_format") == "comparison":
+        from comparison_video import render_comparison_video
+        render_comparison_video(fact, audio_path, video_path)
+    else:
+        background = os.environ.get("BACKGROUND_VIDEO_PATH")
+        render_video(fact, audio_path, video_path, words=words, background_video=background,
+                     ai_images=ai_images)
     log.info(f"Video: {video_path}")
 
     if dry_run:
@@ -119,17 +146,30 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
 
     # 4. Upload to YouTube
     log.info(f"Lade Video hoch (privacy={privacy})...")
+    expected_channel_id = channel["channelId"] if channel_verification_enabled() else None
     video_id = upload_short(
         video_path=video_path,
         title=fact["title"],
-        description=fact["body"],
+        description=_description_with_sources(fact),
         tags=fact.get("tags", []),
         privacy=privacy,
+        expected_channel_id=expected_channel_id,
+        language=channel.get("language", "en"),
     )
     # Only record actually-posted videos so the topic is avoided next time
     history.add_entry("short", fact["title"], fact.get("category", ""))
     log.info(f"Fertig! https://youtube.com/shorts/{video_id}")
     return video_id
+
+
+def _description_with_sources(content: dict) -> str:
+    description = content["body"]
+    sources = content.get("sources") or []
+    if sources:
+        description += "\n\nSources (data access):\n" + "\n".join(sources)
+    if content.get("language") == "en":
+        description += "\n\nThis is educational information, not financial advice or a recommendation to buy or sell."
+    return description
 
 
 if __name__ == "__main__":

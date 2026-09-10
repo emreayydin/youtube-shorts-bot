@@ -12,6 +12,8 @@ __pycache__/
 *.json
 !requirements.txt
 !history.json
+!config/
+!config/*.json
 
 # Kein VS-Code-Extension-Paket / OS-Müll
 *.vsix

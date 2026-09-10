@@ -1,0 +1,14 @@
+{
+  "faktisch": {
+    "channelId": "UCBdithvKOuXuomaRyC_kxFA",
+    "handle": "@faktastisch.official",
+    "language": "de",
+    "voice": "de-DE-KillianNeural"
+  },
+  "difference_money": {
+    "channelId": "UC_FrWjKB66YyV9AeKPaEHIA",
+    "handle": "@differencemoney",
+    "language": "en",
+    "voice": "en-US-AriaNeural"
+  }
+}

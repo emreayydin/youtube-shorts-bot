@@ -5,7 +5,7 @@ Erstellt täglich automatisch deutsche Trivia-Fakten als YouTube Shorts.
 ## Architektur
 
 ```
-Claude API → Trivia-Fakt generieren
+Lokale Faktenbank → Trivia-Fakt generieren
      ↓
 edge-tts  → Text zu Sprache (Microsoft Neural Voice)
      ↓
@@ -15,6 +15,9 @@ YouTube API → Short hochladen
      ↓
 GitHub Actions → täglich 14:00 Uhr (DE)
 ```
+
+Die lokale Faktenbank ist der Standard und benötigt keinen Anthropic-Schlüssel.
+Für Uploads bleibt nur die separate YouTube-OAuth-Authentifizierung notwendig.
 
 ## Setup
 
@@ -28,13 +31,7 @@ Außerdem ffmpeg installieren:
 - macOS: `brew install ffmpeg`
 - Ubuntu: `sudo apt install ffmpeg`
 
-### 2. Anthropic API Key holen
-
-1. Gehe zu https://console.anthropic.com
-2. Erstelle einen API Key
-3. Speichere ihn als Umgebungsvariable: `export ANTHROPIC_API_KEY=sk-ant-...`
-
-### 3. YouTube API einrichten
+### 2. YouTube API einrichten
 
 1. Gehe zur [Google Cloud Console](https://console.cloud.google.com)
 2. Neues Projekt erstellen
@@ -52,7 +49,7 @@ python upload_youtube.py
 → Token wird als `youtube_token.json` gespeichert  
 → **Den JSON-Inhalt kopieren** (wird für GitHub Secrets benötigt)
 
-### 4. GitHub Repository einrichten
+### 3. GitHub Repository einrichten
 
 ```bash
 git init
@@ -62,16 +59,15 @@ git commit -m "Initial commit"
 git push -u origin main
 ```
 
-### 5. GitHub Secrets setzen
+### 4. GitHub Secrets setzen
 
 Gehe zu: **Settings → Secrets and variables → Actions → New repository secret**
 
 | Secret Name | Inhalt |
 |---|---|
-| `ANTHROPIC_API_KEY` | Dein Anthropic API Key |
 | `YOUTUBE_TOKEN_JSON` | Inhalt der `youtube_token.json` (ganzer JSON) |
 
-### 6. Testen
+### 5. Testen
 
 Manuell in GitHub Actions starten:
 - Gehe zu **Actions → Daily YouTube Short → Run workflow**
@@ -109,10 +105,42 @@ YouTube OAuth-Token läuft nach ~6 Monaten ab. Dann:
 
 | Service | Kosten |
 |---|---|
-| Claude API (Sonnet) | ~$0.01 pro Video |
+| Lokale Faktenbank | Kostenlos |
 | edge-tts | Kostenlos |
 | ffmpeg | Kostenlos |
 | YouTube API | Kostenlos (10.000 Units/Tag) |
 | GitHub Actions | Kostenlos (2.000 Min/Monat) |
 
 **Gesamtkosten: ~$0.30/Monat** (30 Videos)
+
+## Channel takeover: The Difference Money
+
+The repository now keeps the two YouTube channels explicit in
+`config/channels.json`. The legacy default remains `faktisch`; the finance
+channel is selected deliberately and cannot silently fall back to it:
+
+```bash
+cd src
+CHANNEL_MODE=difference_money CONTENT_MODE=finance COMPARISON_SYMBOL=SPY \
+  VERIFY_CHANNEL_ID=true python main.py --dry-run
+```
+
+The finance mode can generate a clean historical comparison in the visual style
+of a data explainer: a highlighted headline, original vector icons, and an
+animated adjusted-close chart. Numeric values are calculated in
+`src/finance_ranking.py`; the language model is not allowed to invent prices or
+returns. Each generated description includes the data timestamp, source, and
+an educational-not-financial-advice notice. A finance upload first checks the
+OAuth channel ID, so the wrong Brand Account fails before `videos.insert`.
+
+Before enabling a scheduled upload, authorize the intended Difference Money
+account with the upload and read-only YouTube scopes, update the repository
+secret, and run a dry run. Never copy the token into source control or send it
+in chat. The comparison defaults live in `config/finance.json`; choose the
+ticker deliberately and keep the source/disclaimer in every upload.
+
+The manual GitHub workflow `.github/workflows/difference_money_ranking.yml`
+uses the separate `DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON` secret and starts in
+dry-run mode; a real run defaults to `unlisted`. It is intentionally not
+scheduled until the correct OAuth identity has been verified in the repository
+settings.
