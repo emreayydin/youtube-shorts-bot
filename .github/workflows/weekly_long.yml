@@ -19,6 +19,12 @@ on:
 permissions:
   contents: write   # allows committing history.json back to the repo
 
+# Shorts und Langvideo schreiben dieselbe history.json. Nie parallel laufen
+# lassen, sonst kollidieren die automatischen Update-Commits.
+concurrency:
+  group: faktisch-history
+  cancel-in-progress: false
+
 jobs:
   create-and-upload:
     runs-on: ubuntu-latest
