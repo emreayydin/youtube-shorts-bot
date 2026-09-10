@@ -125,6 +125,11 @@ CHANNEL_MODE=difference_money CONTENT_MODE=finance COMPARISON_SYMBOL=ACWI \
   VERIFY_CHANNEL_ID=true python main.py --dry-run
 ```
 
+For a named preview use `COMPARISON_SCENARIO=mercedes-car` instead of the
+ticker. With `COMPARISON_SCENARIO=auto`, the daily workflow rotates through the
+configured comparisons (all-world ETF/House, Mercedes, Apple/AirPods, eBay,
+Tesla and Solana/transfer fee) deterministically by UTC date.
+
 The finance mode can generate a clean historical comparison in the visual style
 of a data explainer: a highlighted headline, original vector icons, and an
 animated adjusted-close chart. Numeric values are calculated in
@@ -139,8 +144,8 @@ secret, and run a dry run. Never copy the token into source control or send it
 in chat. The comparison defaults live in `config/finance.json`; choose the
 ticker deliberately and keep the source/disclaimer in every upload.
 
-The manual GitHub workflow `.github/workflows/difference_money_ranking.yml`
-uses the separate `DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON` secret and starts in
-dry-run mode; a real run defaults to `unlisted`. It is intentionally not
-scheduled until the correct OAuth identity has been verified in the repository
-settings.
+The GitHub workflow `.github/workflows/difference_money_ranking.yml` is
+scheduled daily at 16:00 UTC and uses the separate
+`DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON` secret. It skips safely until that
+target-channel secret exists; manual runs start in dry-run mode and scheduled
+runs use `public` only after the channel-ID verification gate passes.

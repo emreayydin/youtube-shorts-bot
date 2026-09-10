@@ -34,6 +34,81 @@
     "lookbackYears": 18,
     "alternativeLabel": "House",
     "alternativePhrase": "buying a House in 2008",
-    "alternativeIcon": "house"
-  }
+    "alternativeIcon": "house",
+    "referenceMode": "purchase"
+  },
+  "comparisonScenarios": [
+    {
+      "id": "acwi-house",
+      "symbol": "ACWI",
+      "assetLabel": "an all-world ETF",
+      "chartLabel": "MSCI ACWI",
+      "initialAmount": 300000,
+      "lookbackYears": 18,
+      "alternativeLabel": "House",
+      "alternativePhrase": "buying a House in 2008",
+      "alternativeIcon": "house",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "mercedes-car",
+      "symbol": "MBG.DE",
+      "assetLabel": "Mercedes stock",
+      "chartLabel": "Mercedes-Benz",
+      "initialAmount": 50000,
+      "lookbackYears": 30,
+      "alternativeLabel": "Mercedes",
+      "alternativePhrase": "buying a Mercedes in 1996",
+      "alternativeIcon": "car",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "apple-airpods",
+      "symbol": "AAPL",
+      "assetLabel": "Apple stock",
+      "chartLabel": "Apple",
+      "initialAmount": 159,
+      "lookbackYears": 10,
+      "alternativeLabel": "AirPods",
+      "alternativePhrase": "buying AirPods in 2016",
+      "alternativeIcon": "earbuds",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "ebay-cash",
+      "symbol": "EBAY",
+      "assetLabel": "eBay stock",
+      "chartLabel": "eBay",
+      "initialAmount": 1000,
+      "lookbackYears": 28,
+      "alternativeLabel": "Cash",
+      "alternativePhrase": "keeping $1,000 in cash in 1998",
+      "alternativeIcon": "wallet",
+      "referenceMode": "cash"
+    },
+    {
+      "id": "tesla-car",
+      "symbol": "TSLA",
+      "assetLabel": "Tesla stock",
+      "chartLabel": "Tesla",
+      "initialAmount": 35000,
+      "lookbackYears": 10,
+      "alternativeLabel": "Tesla",
+      "alternativePhrase": "buying a Tesla in 2016",
+      "alternativeIcon": "car",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "solana-transfer-fee",
+      "symbol": "SOL-USD",
+      "assetLabel": "Solana",
+      "chartLabel": "Solana",
+      "initialAmount": 53000000,
+      "lookbackYears": 6,
+      "alternativeLabel": "Transfer fee",
+      "alternativePhrase": "paying a $53 million transfer fee in 2020",
+      "alternativeIcon": "football",
+      "referenceMode": "purchase"
+    }
+  ]
 }

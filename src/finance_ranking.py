@@ -10,6 +10,7 @@ timestamp so a script cannot be mistaken for a timeless recommendation.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import urllib.parse
@@ -241,6 +242,48 @@ def _historical_series(symbol: str, lookback_years: int = 10) -> tuple[list[dict
     return points, source_url
 
 
+def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
+    """Select one comparison deterministically for a run.
+
+    ``COMPARISON_SCENARIO`` can name a configured scenario for previews or an
+    explicit upload. ``auto`` rotates by the UTC date so retries on the same
+    day remain idempotent and consecutive scheduled days move to another
+    comparison without needing a mutable counter or a secret.
+    """
+    base = dict(config.get("comparison") or {})
+    scenarios = [item for item in config.get("comparisonScenarios", []) if isinstance(item, dict)]
+    if not scenarios:
+        return base, None
+
+    requested = os.environ.get("COMPARISON_SCENARIO", "auto").strip().lower()
+    # Keep explicit ticker previews backwards-compatible with the original
+    # single-comparison configuration. Scheduled runs leave the ticker empty
+    # and therefore use the date-based rotation below.
+    if requested in {"", "auto"} and os.environ.get("COMPARISON_SYMBOL", "").strip():
+        return base, None
+    selected = None
+    if requested and requested != "auto":
+        for item in scenarios:
+            scenario_id = str(item.get("id", "")).strip().lower()
+            if requested == scenario_id or requested == str(item.get("symbol", "")).strip().lower():
+                selected = item
+                break
+        if selected is None:
+            available = ", ".join(str(item.get("id")) for item in scenarios)
+            raise ValueError(f"Unbekanntes COMPARISON_SCENARIO {requested!r}; verfügbar: {available}")
+    else:
+        rotation_key = os.environ.get("COMPARISON_ROTATION_KEY", "").strip()
+        if not rotation_key:
+            selected = scenarios[datetime.now(timezone.utc).date().toordinal() % len(scenarios)]
+        else:
+            digest = hashlib.sha256(rotation_key.encode("utf-8")).hexdigest()
+            selected = scenarios[int(digest[:8], 16) % len(scenarios)]
+
+    merged = dict(base)
+    merged.update(selected)
+    return merged, str(selected.get("id") or "") or None
+
+
 def _money(value: float) -> str:
     if abs(value) >= 1_000_000:
         return f"${value / 1_000_000:.1f} million"
@@ -250,7 +293,7 @@ def _money(value: float) -> str:
 def generate_comparison() -> dict:
     """Create a 60+ second Difference Money comparison from live public data."""
     config = load_finance_config()
-    comparison_config = config.get("comparison") or {}
+    comparison_config, scenario_id = _select_comparison_config(config)
     symbol = os.environ.get("COMPARISON_SYMBOL", comparison_config.get("symbol", "SPY")).upper()
     initial = float(os.environ.get("COMPARISON_INITIAL", comparison_config.get("initialAmount", 10_000)))
     lookback_years = int(os.environ.get("COMPARISON_LOOKBACK_YEARS", comparison_config.get("lookbackYears", 10)))
@@ -277,11 +320,14 @@ def generate_comparison() -> dict:
     sign = "more" if difference >= 0 else "less"
     as_of = value_series[-1]["date"]
 
-    if alternative_icon == "house":
-        reference_note = "House line = original purchase amount; excludes appreciation, financing and ownership costs."
+    reference_mode = str(comparison_config.get("referenceMode") or (
+        "purchase" if alternative_icon == "house" else "cash"
+    )).lower()
+    if reference_mode == "purchase":
+        reference_note = f"{alternative_label} line = original purchase amount; excludes financing, fees and resale value."
         reference_sentence = (
-            f"The {alternative_label.lower()} line is the original purchase amount, not a forecast of property value, "
-            "and it excludes financing, rent, taxes, maintenance and appreciation."
+            f"The {alternative_label.lower()} line is the original purchase amount, not a resale forecast, "
+            "and it excludes financing, taxes, fees, maintenance and appreciation."
         )
     else:
         reference_note = "Reference line = starting cash balance; inflation, taxes and fees are excluded."
@@ -313,6 +359,7 @@ def generate_comparison() -> dict:
             "alternativePhrase": alternative_phrase,
             "alternativeIcon": alternative_icon,
             "referenceNote": reference_note,
+            "scenarioId": scenario_id,
             "symbol": symbol,
             "initialAmount": round(initial, 2),
             "startDate": value_series[0]["date"],

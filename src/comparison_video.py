@@ -120,6 +120,61 @@ def _draw_house(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -
     draw.ellipse((x + 113 * s, y + 135 * s, x + 151 * s, y + 155 * s), fill=(103, 173, 91))
 
 
+def _draw_car(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -> None:
+    """Original vector car icon for purchase-vs-stock comparisons."""
+    s = scale
+    draw.ellipse((x + 10 * s, y + 135 * s, x + 170 * s, y + 155 * s), fill=(224, 226, 230))
+    body = [
+        (x + 12 * s, y + 96 * s), (x + 35 * s, y + 91 * s),
+        (x + 61 * s, y + 48 * s), (x + 121 * s, y + 48 * s),
+        (x + 151 * s, y + 91 * s), (x + 166 * s, y + 98 * s),
+        (x + 166 * s, y + 130 * s), (x + 12 * s, y + 130 * s),
+    ]
+    draw.polygon(body, fill=(68, 91, 125), outline=(42, 57, 83))
+    draw.polygon(
+        [(x + 65 * s, y + 53 * s), (x + 82 * s, y + 53 * s),
+         (x + 82 * s, y + 88 * s), (x + 49 * s, y + 88 * s)],
+        fill=(166, 205, 224), outline=(42, 57, 83),
+    )
+    draw.polygon(
+        [(x + 87 * s, y + 53 * s), (x + 119 * s, y + 53 * s),
+         (x + 143 * s, y + 88 * s), (x + 87 * s, y + 88 * s)],
+        fill=(166, 205, 224), outline=(42, 57, 83),
+    )
+    draw.rectangle((x + 20 * s, y + 99 * s, x + 158 * s, y + 117 * s), fill=(91, 144, 214))
+    draw.ellipse((x + 28 * s, y + 116 * s, x + 57 * s, y + 145 * s), fill=(35, 38, 43), outline=(18, 18, 18))
+    draw.ellipse((x + 121 * s, y + 116 * s, x + 150 * s, y + 145 * s), fill=(35, 38, 43), outline=(18, 18, 18))
+    draw.ellipse((x + 37 * s, y + 125 * s, x + 48 * s, y + 136 * s), fill=(183, 188, 195))
+    draw.ellipse((x + 130 * s, y + 125 * s, x + 141 * s, y + 136 * s), fill=(183, 188, 195))
+    draw.rounded_rectangle((x + 148 * s, y + 98 * s, x + 164 * s, y + 108 * s), radius=int(3 * s), fill=(246, 220, 115))
+
+
+def _draw_earbuds(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -> None:
+    """Original vector earbuds case for small consumer-product comparisons."""
+    s = scale
+    draw.rounded_rectangle((x + 28 * s, y + 75 * s, x + 132 * s, y + 143 * s), radius=int(18 * s), fill=(239, 243, 247), outline=(161, 170, 181), width=max(1, int(3 * s)))
+    draw.arc((x + 28 * s, y + 51 * s, x + 132 * s, y + 105 * s), 180, 360, fill=(161, 170, 181), width=max(1, int(3 * s)))
+    draw.line((x + 80 * s, y + 81 * s, x + 80 * s, y + 137 * s), fill=(190, 198, 207), width=max(1, int(2 * s)))
+    for offset in (0, 58):
+        draw.ellipse((x + (40 + offset) * s, y + 20 * s, x + (64 + offset) * s, y + 48 * s), fill=(250, 252, 254), outline=(161, 170, 181), width=max(1, int(3 * s)))
+        draw.rounded_rectangle((x + (49 + offset) * s, y + 39 * s, x + (64 + offset) * s, y + 91 * s), radius=int(7 * s), fill=(250, 252, 254), outline=(161, 170, 181), width=max(1, int(3 * s)))
+
+
+def _draw_football(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -> None:
+    """Simple original football icon for sports-fee comparisons."""
+    s = scale
+    draw.ellipse((x + 20 * s, y + 18 * s, x + 140 * s, y + 138 * s), fill=(245, 245, 242), outline=(45, 45, 45), width=max(1, int(4 * s)))
+    center = (x + 80 * s, y + 78 * s)
+    pentagon = [
+        (x + 80 * s, y + 56 * s), (x + 101 * s, y + 71 * s),
+        (x + 93 * s, y + 96 * s), (x + 67 * s, y + 96 * s),
+        (x + 59 * s, y + 71 * s),
+    ]
+    draw.polygon(pentagon, fill=(45, 45, 45))
+    for px, py in ((38, 55), (122, 55), (44, 113), (116, 113)):
+        draw.line((center[0], center[1], x + px * s, y + py * s), fill=(85, 85, 85), width=max(1, int(3 * s)))
+
+
 def _draw_mini_chart(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -> None:
     s = scale
     points = [(x + 0 * s, y + 105 * s), (x + 28 * s, y + 75 * s), (x + 52 * s, y + 91 * s), (x + 79 * s, y + 45 * s), (x + 106 * s, y + 59 * s), (x + 138 * s, y + 8 * s)]
@@ -215,8 +270,15 @@ def _frame(fact: dict, progress: float) -> Image.Image:
 
     _draw_money_bag(draw, 105, 384, 1.05)
     _draw_mini_chart(draw, 404, 405, 1.25)
-    if comparison.get("alternativeIcon") == "house":
+    alternative_icon = comparison.get("alternativeIcon")
+    if alternative_icon == "house":
         _draw_house(draw, 817, 392, 0.88)
+    elif alternative_icon == "car":
+        _draw_car(draw, 817, 392, 0.88)
+    elif alternative_icon == "earbuds":
+        _draw_earbuds(draw, 817, 392, 0.88)
+    elif alternative_icon == "football":
+        _draw_football(draw, 817, 392, 0.88)
     else:
         _draw_wallet(draw, 817, 392, 0.88)
 
@@ -237,11 +299,16 @@ def _frame(fact: dict, progress: float) -> Image.Image:
 
     position = min(len(series) - 1, max(0.0, progress * (len(series) - 1)))
     visible_denominator = max(1.0, position)
+    whole = int(position)
+    fraction = position - whole
 
     def xy(index: float, value: float) -> tuple[float, float]:
         x = left + (plot_right - left) * min(1.0, index / visible_denominator)
         yy = bottom - (value / y_max) * chart_height
         return x, yy
+
+    current_value = values[whole] + (values[min(whole + 1, len(values) - 1)] - values[whole]) * fraction
+    current_y = xy(position, current_value)[1]
 
     # The alternative is a constant green reference line, just like the
     # reference explainer. It is deliberately labelled as a reference rather
@@ -249,12 +316,16 @@ def _frame(fact: dict, progress: float) -> Image.Image:
     reference_y = xy(0, initial)[1]
     draw.line((left, reference_y, plot_right, reference_y), fill=GREEN, width=7)
     reference_label = comparison.get("alternativeLabel", "Cash")
-    draw.rounded_rectangle((right - 218, reference_y - 37, right - 10, reference_y + 37), radius=16, fill=LIGHT_GREEN)
-    draw.text((right - 114, reference_y), f"{reference_label}\n{_money(initial)}", font=_font(25, bold=True), fill=GREEN, anchor="mm", align="center")
+    reference_label_y = reference_y
+    if abs(current_y - reference_y) < 130:
+        # Keep the two endpoint labels readable when the series finishes near
+        # the reference line; the lower slot mirrors the stacked labels in the
+        # reference videos and stays above the x-axis.
+        reference_label_y = min(bottom - 40, reference_y + 90)
+    draw.rounded_rectangle((right - 218, reference_label_y - 37, right - 10, reference_label_y + 37), radius=16, fill=LIGHT_GREEN)
+    draw.text((right - 114, reference_label_y), f"{reference_label}\n{_money(initial)}", font=_font(25, bold=True), fill=GREEN, anchor="mm", align="center")
 
     # Reveal the adjusted-price series over the whole video.
-    whole = int(position)
-    fraction = position - whole
     line = [xy(i, values[i]) for i in range(whole + 1)]
     if whole < len(series) - 1:
         interpolated = values[whole] + (values[whole + 1] - values[whole]) * fraction
@@ -262,7 +333,7 @@ def _frame(fact: dict, progress: float) -> Image.Image:
     draw.line(line, fill=BLUE, width=10, joint="curve")
     end_x, end_y = line[-1]
     draw.ellipse((end_x - 9, end_y - 9, end_x + 9, end_y + 9), fill=BLUE)
-    label_value = values[whole] + (values[min(whole + 1, len(values) - 1)] - values[whole]) * fraction
+    label_value = current_value
     label_x = min(max(left + 12, end_x + 14), right - 180)
     chart_label = comparison.get("chartLabel", comparison["assetLabel"])
     draw.text((label_x, max(top + 14, end_y - 24)), f"{chart_label}\n{_money(label_value)}", font=_font(28, bold=True), fill=BLUE)

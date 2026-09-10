@@ -1,12 +1,21 @@
 name: Difference Money Comparison
 
 on:
+  schedule:
+    # Ein englischer Vergleichs-Short pro Tag; der Szenario-Selektor rotiert
+    # deterministisch über die konfigurierte Liste.
+    - cron: "0 16 * * *"
   workflow_dispatch:
     inputs:
+      comparison_scenario:
+        description: "Szenario-ID oder auto für die tägliche Rotation"
+        required: false
+        default: auto
+        type: string
       comparison_symbol:
         description: "Asset ticker for the historical comparison"
-        required: true
-        default: ACWI
+        required: false
+        default: ""
         type: string
       dry_run:
         description: "Dry run (kein Upload)"
@@ -23,17 +32,45 @@ on:
           - public
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  # Dieselbe history.json wird auch von den bestehenden YouTube-Workflows
+  # gepflegt; gemeinsame Gruppe verhindert parallele Commit-Rennen.
+  group: faktisch-history
+  cancel-in-progress: false
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Check target-channel credential
+        id: check
+        env:
+          TARGET_TOKEN: ${{ secrets.DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ] || [ -n "$TARGET_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Difference Money is scheduled, but DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON is not configured; this run is skipped safely."
+          fi
+
   create-and-upload:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.ready == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       CHANNEL_MODE: difference_money
       CONTENT_MODE: finance
+      COMPARISON_SCENARIO: ${{ inputs.comparison_scenario }}
       COMPARISON_SYMBOL: ${{ inputs.comparison_symbol }}
       TTS_RATE: "+8%"
+      VERIFY_CHANNEL_ID: "true"
       YOUTUBE_TOKEN_JSON: ${{ secrets.DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON }}
 
     steps:
@@ -57,12 +94,25 @@ jobs:
       - name: Generate and optionally upload ranking
         working-directory: src
         env:
-          UPLOAD_PRIVACY: ${{ inputs.privacy }}
+          UPLOAD_PRIVACY: ${{ inputs.privacy || 'public' }}
         run: |
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             python main.py --dry-run
           else
             python main.py
+          fi
+
+      - name: Save history (avoid repeating the same scenario)
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add history.json
+          if ! git diff --staged --quiet; then
+            git commit -m "Record Difference Money upload [skip ci]"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
           fi
 
       - name: Upload dry-run artifact

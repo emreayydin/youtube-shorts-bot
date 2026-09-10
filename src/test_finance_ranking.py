@@ -63,6 +63,28 @@ class FinanceRankingTests(unittest.TestCase):
         self.assertEqual(channel["channelId"], "UC_FrWjKB66YyV9AeKPaEHIA")
         self.assertEqual(channel["language"], "en")
 
+    def test_named_comparison_scenario_is_selected_without_ai(self):
+        points = [
+            {"date": "1996-01-01", "value": 100.0},
+            {"date": "2026-01-01", "value": 250.0},
+        ]
+        with patch.dict("os.environ", {"COMPARISON_SCENARIO": "mercedes-car"}, clear=True), \
+                patch.object(finance_ranking, "_historical_series", return_value=(points, "https://example.test/MBG.DE")):
+            content = finance_ranking.generate_comparison()
+
+        self.assertEqual(content["comparison"]["scenarioId"], "mercedes-car")
+        self.assertEqual(content["comparison"]["symbol"], "MBG.DE")
+        self.assertEqual(content["comparison"]["alternativeLabel"], "Mercedes")
+        self.assertEqual(content["language"], "en")
+
+    def test_explicit_ticker_keeps_single_comparison_preview_compatible(self):
+        config = finance_ranking.load_finance_config()
+        with patch.dict("os.environ", {"COMPARISON_SYMBOL": "ACWI"}, clear=True):
+            selected, scenario_id = finance_ranking._select_comparison_config(config)
+        self.assertIsNone(scenario_id)
+        self.assertEqual(selected["symbol"], "ACWI")
+        self.assertEqual(selected["alternativeLabel"], "House")
+
 
 if __name__ == "__main__":
     unittest.main()
