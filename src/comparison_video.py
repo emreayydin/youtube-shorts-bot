@@ -146,12 +146,13 @@ def _downsample(series: list[dict], maximum: int = 220) -> list[dict]:
 
 
 def _draw_time_axis(draw: ImageDraw.ImageDraw, series: list[dict], progress: float,
-                    left: int, right: int, bottom: int) -> tuple[str, str]:
-    """Reveal every year as the animated line reaches that year.
+                    left: int, right: int, bottom: int, plot_right: int | None = None) -> tuple[str, str]:
+    """Animate the time axis like the reference explainer.
 
-    The thin blue cursor follows the line's current time position. Annual ticks
-    slide in from below when their first data point becomes visible, then stay
-    on the axis for the rest of the video.
+    The visible history is compressed into a stable chart window as new years
+    arrive. This keeps the current point at the right edge while the year
+    labels and ticks move along with the history instead of growing into a
+    fixed, increasingly crowded strip.
     """
     if not series:
         return "", ""
@@ -162,21 +163,34 @@ def _draw_time_axis(draw: ImageDraw.ImageDraw, series: list[dict], progress: flo
         if len(year) == 4 and year not in first_year_at:
             first_year_at[year] = index / denominator
 
-    current_index = min(len(series) - 1, max(0, int(progress * denominator)))
+    plot_right = plot_right or right
+    current_position = min(float(denominator), max(0.0, progress * denominator))
+    current_index = min(len(series) - 1, max(0, int(current_position)))
     current_year = str(series[current_index].get("date", ""))[:4]
-    cursor_x = left + (right - left) * progress
+    visible_denominator = max(1.0, current_position)
+    cursor_x = plot_right if current_position > 0 else left
     draw.line((cursor_x, bottom - 14, cursor_x, bottom + 17), fill=BLUE, width=4)
 
+    visible_years = [
+        (year, position)
+        for year, position in first_year_at.items()
+        if position * denominator <= current_position + 0.5
+    ]
+    label_step = max(1, math.ceil(max(0, len(visible_years) - 1) / 5))
+    label_indices = set(range(0, len(visible_years), label_step))
+    if visible_years:
+        label_indices.add(len(visible_years) - 1)
+
     font = _axis_font(18)
-    for year, position in first_year_at.items():
-        if position > progress + (1 / denominator):
-            continue
-        reveal = min(1.0, max(0.0, (progress - position) / 0.018))
-        x = left + (right - left) * position
+    for visible_number, (year, position) in enumerate(visible_years):
+        index = position * denominator
+        x = left + (plot_right - left) * min(1.0, index / visible_denominator)
+        reveal = min(1.0, max(0.0, (current_position - index) / max(0.55, denominator * 0.018)))
         y = bottom + 28 + (1.0 - reveal) * 14
         colour = BLUE if year == current_year else BLACK
         draw.line((x, bottom, x, bottom + 12), fill=colour, width=2)
-        draw.text((x, y), year, font=font, fill=colour, anchor="ma")
+        if visible_number in label_indices:
+            draw.text((x, y), year, font=font, fill=colour, anchor="ma")
 
     return str(series[0].get("date", ""))[:4], str(series[-1].get("date", ""))[:4]
 
@@ -207,6 +221,7 @@ def _frame(fact: dict, progress: float) -> Image.Image:
         _draw_wallet(draw, 817, 392, 0.88)
 
     left, right = 160, 960
+    plot_right = right - 210
     top, bottom = 720, 1588
     chart_height = bottom - top
 
@@ -220,8 +235,11 @@ def _frame(fact: dict, progress: float) -> Image.Image:
     draw.line((left, top, left, bottom), fill=BLACK, width=6)
     draw.line((left, bottom, right, bottom), fill=BLACK, width=6)
 
-    def xy(index: int, value: float) -> tuple[float, float]:
-        x = left + (right - left) * index / max(1, len(series) - 1)
+    position = min(len(series) - 1, max(0.0, progress * (len(series) - 1)))
+    visible_denominator = max(1.0, position)
+
+    def xy(index: float, value: float) -> tuple[float, float]:
+        x = left + (plot_right - left) * min(1.0, index / visible_denominator)
         yy = bottom - (value / y_max) * chart_height
         return x, yy
 
@@ -229,13 +247,12 @@ def _frame(fact: dict, progress: float) -> Image.Image:
     # reference explainer. It is deliberately labelled as a reference rather
     # than pretending to model ownership costs or property appreciation.
     reference_y = xy(0, initial)[1]
-    draw.line((left, reference_y, right, reference_y), fill=GREEN, width=7)
+    draw.line((left, reference_y, plot_right, reference_y), fill=GREEN, width=7)
     reference_label = comparison.get("alternativeLabel", "Cash")
     draw.rounded_rectangle((right - 218, reference_y - 37, right - 10, reference_y + 37), radius=16, fill=LIGHT_GREEN)
     draw.text((right - 114, reference_y), f"{reference_label}\n{_money(initial)}", font=_font(25, bold=True), fill=GREEN, anchor="mm", align="center")
 
     # Reveal the adjusted-price series over the whole video.
-    position = min(len(series) - 1, max(0.0, progress * (len(series) - 1)))
     whole = int(position)
     fraction = position - whole
     line = [xy(i, values[i]) for i in range(whole + 1)]
@@ -252,7 +269,7 @@ def _frame(fact: dict, progress: float) -> Image.Image:
 
     # The time axis grows with the data instead of showing three static years.
     # This keeps each annual change synchronized with the moving line.
-    start_year, end_year = _draw_time_axis(draw, full_series, progress, left, right, bottom)
+    start_year, end_year = _draw_time_axis(draw, full_series, progress, left, right, bottom, plot_right=plot_right)
 
     source = comparison.get("asOf", "")[:10]
     draw.text((52, 1698), f"Historical comparison • {start_year}–{end_year} • data through {source}", font=_font(24), fill=MUTED)
