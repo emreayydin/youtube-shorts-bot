@@ -119,6 +119,6 @@ jobs:
         if: ${{ inputs.dry_run }}
         uses: actions/upload-artifact@v4
         with:
-          name: difference-money-${{ inputs.comparison_symbol }}-comparison
-          path: output/short_*.mp4
+          name: difference-money-${{ inputs.comparison_scenario || inputs.comparison_symbol || 'auto' }}-comparison
+          path: src/output/short_*.mp4
           retention-days: 7
