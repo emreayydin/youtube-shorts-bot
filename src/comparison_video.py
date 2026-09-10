@@ -29,10 +29,12 @@ WHITE = (255, 255, 255)
 
 FONT_PATHS = {
     "regular": [
+        "/System/Library/Fonts/Supplemental/Comic Sans MS.ttf",
         "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
     ],
     "bold": [
+        "/System/Library/Fonts/Supplemental/Comic Sans MS Bold.ttf",
         "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     ],
@@ -89,6 +91,20 @@ def _draw_wallet(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) 
     draw.ellipse((x + 126 * s, y + 73 * s, x + 139 * s, y + 86 * s), fill=(48, 91, 151))
 
 
+def _draw_house(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -> None:
+    """Small original house icon for purchase-vs-investment comparisons."""
+    s = scale
+    roof = [(x + 7 * s, y + 62 * s), (x + 78 * s, y + 4 * s), (x + 149 * s, y + 62 * s)]
+    draw.polygon(roof, fill=(68, 91, 125), outline=(42, 57, 83))
+    draw.rectangle((x + 24 * s, y + 58 * s, x + 133 * s, y + 143 * s), fill=(246, 238, 220), outline=(42, 57, 83), width=max(1, int(4 * s)))
+    draw.rectangle((x + 70 * s, y + 98 * s, x + 92 * s, y + 143 * s), fill=(194, 75, 68), outline=(122, 51, 46), width=max(1, int(3 * s)))
+    draw.rectangle((x + 39 * s, y + 82 * s, x + 61 * s, y + 105 * s), fill=(110, 170, 212), outline=(42, 57, 83), width=max(1, int(3 * s)))
+    draw.rectangle((x + 101 * s, y + 82 * s, x + 123 * s, y + 105 * s), fill=(110, 170, 212), outline=(42, 57, 83), width=max(1, int(3 * s)))
+    draw.ellipse((x + 85 * s, y + 119 * s, x + 90 * s, y + 124 * s), fill=(246, 220, 115))
+    draw.ellipse((x + 10 * s, y + 135 * s, x + 48 * s, y + 155 * s), fill=(103, 173, 91))
+    draw.ellipse((x + 113 * s, y + 135 * s, x + 151 * s, y + 155 * s), fill=(103, 173, 91))
+
+
 def _draw_mini_chart(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -> None:
     s = scale
     points = [(x + 0 * s, y + 105 * s), (x + 28 * s, y + 75 * s), (x + 52 * s, y + 91 * s), (x + 79 * s, y + 45 * s), (x + 106 * s, y + 59 * s), (x + 138 * s, y + 8 * s)]
@@ -127,15 +143,18 @@ def _frame(fact: dict, progress: float) -> Image.Image:
 
     # Headline: same visual grammar as the reference, with original copy.
     y = 74
-    y = _center_segments(draw, y, [("If someone invested ", BLACK, False), (_money(initial), GREEN, True)], 72)
+    y = _center_segments(draw, y, [("If Someone invested ", BLACK, False), (_money(initial), GREEN, True)], 72)
     y = _center_segments(draw, y + 4, [("in ", BLACK, False), (comparison["assetLabel"], BLUE, True), (" instead of", BLACK, False)], 72)
-    _center_segments(draw, y + 4, [("keeping ", BLACK, False), ("cash", BLACK, True)], 72)
+    _center_segments(draw, y + 4, [("", BLACK, False), (comparison.get("alternativePhrase", "keeping cash"), BLACK, True)], 72)
 
     _draw_money_bag(draw, 105, 384, 1.05)
     _draw_mini_chart(draw, 404, 405, 1.25)
-    _draw_wallet(draw, 817, 392, 0.88)
+    if comparison.get("alternativeIcon") == "house":
+        _draw_house(draw, 817, 392, 0.88)
+    else:
+        _draw_wallet(draw, 817, 392, 0.88)
 
-    left, right = 135, 960
+    left, right = 160, 960
     top, bottom = 720, 1588
     chart_height = bottom - top
 
@@ -145,7 +164,7 @@ def _frame(fact: dict, progress: float) -> Image.Image:
         yy = bottom - (value / y_max) * chart_height
         draw.line((left, yy, right, yy), fill=GRID, width=2)
         label = _money(value)
-        draw.text((left - 16, yy), label, font=_font(28, bold=True), fill=BLACK, anchor="ra")
+        draw.text((left - 18, yy), label, font=_font(24, bold=True), fill=BLACK, anchor="ra")
     draw.line((left, top, left, bottom), fill=BLACK, width=6)
     draw.line((left, bottom, right, bottom), fill=BLACK, width=6)
 
@@ -154,21 +173,30 @@ def _frame(fact: dict, progress: float) -> Image.Image:
         yy = bottom - (value / y_max) * chart_height
         return x, yy
 
-    # Cash is the constant green reference line.
-    cash_y = xy(0, initial)[1]
-    draw.line((left, cash_y, right, cash_y), fill=GREEN, width=7)
-    draw.rounded_rectangle((right - 218, cash_y - 37, right - 10, cash_y + 37), radius=16, fill=LIGHT_GREEN)
-    draw.text((right - 114, cash_y), f"Cash\n{_money(initial)}", font=_font(25, bold=True), fill=GREEN, anchor="mm", align="center")
+    # The alternative is a constant green reference line, just like the
+    # reference explainer. It is deliberately labelled as a reference rather
+    # than pretending to model ownership costs or property appreciation.
+    reference_y = xy(0, initial)[1]
+    draw.line((left, reference_y, right, reference_y), fill=GREEN, width=7)
+    reference_label = comparison.get("alternativeLabel", "Cash")
+    draw.rounded_rectangle((right - 218, reference_y - 37, right - 10, reference_y + 37), radius=16, fill=LIGHT_GREEN)
+    draw.text((right - 114, reference_y), f"{reference_label}\n{_money(initial)}", font=_font(25, bold=True), fill=GREEN, anchor="mm", align="center")
 
     # Reveal the adjusted-price series over the whole video.
-    visible = max(2, min(len(series), int(progress * (len(series) - 1)) + 1))
-    line = [xy(i, values[i]) for i in range(visible)]
+    position = min(len(series) - 1, max(0.0, progress * (len(series) - 1)))
+    whole = int(position)
+    fraction = position - whole
+    line = [xy(i, values[i]) for i in range(whole + 1)]
+    if whole < len(series) - 1:
+        interpolated = values[whole] + (values[whole + 1] - values[whole]) * fraction
+        line.append(xy(whole + fraction, interpolated))
     draw.line(line, fill=BLUE, width=10, joint="curve")
-    end_x, end_y = xy(visible - 1, values[visible - 1])
+    end_x, end_y = line[-1]
     draw.ellipse((end_x - 9, end_y - 9, end_x + 9, end_y + 9), fill=BLUE)
-    label_value = values[visible - 1]
+    label_value = values[whole] + (values[min(whole + 1, len(values) - 1)] - values[whole]) * fraction
     label_x = min(max(left + 12, end_x + 14), right - 180)
-    draw.text((label_x, max(top + 14, end_y - 24)), f"{comparison['assetLabel']}\n{_money(label_value)}", font=_font(28, bold=True), fill=BLUE)
+    chart_label = comparison.get("chartLabel", comparison["assetLabel"])
+    draw.text((label_x, max(top + 14, end_y - 24)), f"{chart_label}\n{_money(label_value)}", font=_font(28, bold=True), fill=BLUE)
 
     # Date labels and tiny provenance line keep the chart understandable when
     # the video is reposted without its description.
@@ -179,7 +207,13 @@ def _frame(fact: dict, progress: float) -> Image.Image:
 
     source = comparison.get("asOf", "")[:10]
     draw.text((52, 1698), f"Historical comparison • {date_labels[0]}–{date_labels[-1]} • data through {source}", font=_font(24), fill=MUTED)
-    draw.text((52, 1742), "Educational illustration — not financial advice. Past performance is not a guarantee.", font=_font(22), fill=MUTED)
+    reference_note = comparison.get("referenceNote", "")
+    if reference_note:
+        draw.text((52, 1738), reference_note, font=_font(20), fill=MUTED)
+        disclaimer_y = 1772
+    else:
+        disclaimer_y = 1742
+    draw.text((52, disclaimer_y), "Educational illustration — not financial advice. Past performance is not a guarantee.", font=_font(22), fill=MUTED)
     draw.text((52, 1808), "THE DIFFERENCE MONEY", font=_font(30, bold=True), fill=BLUE)
     return image
 
@@ -193,7 +227,7 @@ def render_comparison_video(fact: dict, audio_path: str, output_path: str, durat
     total = float(duration or os.environ.get("COMPARISON_DURATION", "61.2"))
     if total <= 60:
         total = 61.2
-    fps = max(8, int(os.environ.get("COMPARISON_RENDER_FPS", "15")))
+    fps = max(15, int(os.environ.get("COMPARISON_RENDER_FPS", "30")))
     frame_count = max(1, math.ceil(total * fps))
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)

@@ -121,7 +121,7 @@ channel is selected deliberately and cannot silently fall back to it:
 
 ```bash
 cd src
-CHANNEL_MODE=difference_money CONTENT_MODE=finance COMPARISON_SYMBOL=SPY \
+CHANNEL_MODE=difference_money CONTENT_MODE=finance COMPARISON_SYMBOL=ACWI \
   VERIFY_CHANNEL_ID=true python main.py --dry-run
 ```
 

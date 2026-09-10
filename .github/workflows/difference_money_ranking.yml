@@ -6,7 +6,7 @@ on:
       comparison_symbol:
         description: "Asset ticker for the historical comparison"
         required: true
-        default: SPY
+        default: ACWI
         type: string
       dry_run:
         description: "Dry run (kein Upload)"

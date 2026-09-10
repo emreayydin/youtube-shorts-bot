@@ -259,6 +259,10 @@ def generate_comparison() -> dict:
     asset_entry = next((item for item in config.get("stockWatchlist", []) if item.get("symbol", "").upper() == symbol), {})
     asset_label = os.environ.get("COMPARISON_LABEL", comparison_config.get("assetLabel") or asset_entry.get("name") or symbol)
     asset_label = str(asset_label)
+    chart_label = str(os.environ.get("COMPARISON_CHART_LABEL", comparison_config.get("chartLabel") or asset_label.removeprefix("an ")))
+    alternative_label = str(os.environ.get("COMPARISON_ALTERNATIVE_LABEL", comparison_config.get("alternativeLabel", "Cash")))
+    alternative_phrase = str(os.environ.get("COMPARISON_ALTERNATIVE_PHRASE", comparison_config.get("alternativePhrase", "keeping cash")))
+    alternative_icon = str(os.environ.get("COMPARISON_ALTERNATIVE_ICON", comparison_config.get("alternativeIcon", "wallet")))
     base = series[0]["value"]
     if base <= 0:
         raise ValueError(f"Ungültiger Startwert für {symbol}")
@@ -273,17 +277,28 @@ def generate_comparison() -> dict:
     sign = "more" if difference >= 0 else "less"
     as_of = value_series[-1]["date"]
 
+    if alternative_icon == "house":
+        reference_note = "House line = original purchase amount; excludes appreciation, financing and ownership costs."
+        reference_sentence = (
+            f"The {alternative_label.lower()} line is the original purchase amount, not a forecast of property value, "
+            "and it excludes financing, rent, taxes, maintenance and appreciation."
+        )
+    else:
+        reference_note = "Reference line = starting cash balance; inflation, taxes and fees are excluded."
+        reference_sentence = f"The {alternative_label.lower()} balance stays at the starting amount, before inflation, taxes and fees."
+
     body = (
         f"This is a historical illustration, not a prediction or a buy signal. "
         f"We start with {_money(initial)} on {value_series[0]['date']} and follow the adjusted historical performance of {asset_label}. "
         f"By {as_of}, that investment would be worth about {_money(final_value)}, before taxes and fees. "
-        f"The cash balance would still be {_money(initial)}, so the difference would be about {_money(abs(difference))} {sign}. "
+        f"The {alternative_label.lower()} reference would still be {_money(initial)}, so the difference would be about {_money(abs(difference))} {sign}. "
+        f"{reference_sentence} "
         "Markets can fall, and past performance does not guarantee future results. "
         "Which money comparison should we run next?"
     )
     return {
-        "title": f"{_money(initial)} in {asset_label} vs cash: {start_year}–{end_year}",
-        "hook": f"What if you invested {_money(initial)} in {asset_label} instead of keeping cash",
+        "title": f"{_money(initial)} in {asset_label} vs {alternative_label}: {start_year}–{end_year}",
+        "hook": f"What if you invested {_money(initial)} in {asset_label} instead of {alternative_phrase}",
         "body": body,
         "cta": "Follow The Difference Money for transparent comparisons.",
         "tags": ["markets", "investing", "stocks", "finance", "money"],
@@ -293,6 +308,11 @@ def generate_comparison() -> dict:
         "sources": [source_url],
         "comparison": {
             "assetLabel": asset_label,
+            "chartLabel": chart_label,
+            "alternativeLabel": alternative_label,
+            "alternativePhrase": alternative_phrase,
+            "alternativeIcon": alternative_icon,
+            "referenceNote": reference_note,
             "symbol": symbol,
             "initialAmount": round(initial, 2),
             "startDate": value_series[0]["date"],
