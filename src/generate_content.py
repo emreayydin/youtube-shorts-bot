@@ -1,6 +1,6 @@
-"""Generates trivia facts using the Claude API."""
-import anthropic
+"""Generates trivia facts with a local bank and an optional text API."""
 import json
+import os
 import random
 
 
@@ -49,6 +49,13 @@ def generate_fact(category: str = None, avoid: list[str] = None, attempts: int =
     from history import avoid_block
     prompt = PROMPT_TEMPLATE.format(category=category, avoid=avoid_block(avoid or []))
 
+    # Scheduled uploads use the local, curated bank. An API is an opt-in
+    # experiment and never a prerequisite for producing a video.
+    if os.environ.get("ANTHROPIC_ENABLED", "0") != "1" or not os.environ.get("ANTHROPIC_API_KEY"):
+        from local_content import generate_fact as local_generate_fact
+        return local_generate_fact(category, avoid)
+
+    import anthropic
     client = anthropic.Anthropic()
     last_err = None
     for attempt in range(attempts):
@@ -71,7 +78,9 @@ def generate_fact(category: str = None, avoid: list[str] = None, attempts: int =
             last_err = e
             print(f"Antwort ungültig (Versuch {attempt + 1}/{attempts}): {e} — wiederhole...")
 
-    raise RuntimeError(f"Konnte nach {attempts} Versuchen keinen gültigen Fakt erzeugen: {last_err}")
+    print(f"Anthropic nicht verfuegbar ({last_err}) - nutze lokale Faktenbank")
+    from local_content import generate_fact as local_generate_fact
+    return local_generate_fact(category, avoid)
 
 
 if __name__ == "__main__":

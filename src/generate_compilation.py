@@ -1,6 +1,6 @@
-"""Generates a multi-fact compilation script (long-form 16:9 video) via Claude."""
-import anthropic
+"""Generates a multi-fact compilation with an API-optional local fallback."""
 import json
+import os
 import random
 
 from generate_content import CATEGORIES
@@ -50,6 +50,11 @@ def generate_compilation(category: str = None, avoid: list[str] = None,
     from history import avoid_block
     prompt = PROMPT_TEMPLATE.format(category=category, avoid=avoid_block(avoid or []))
 
+    if os.environ.get("ANTHROPIC_ENABLED", "0") != "1" or not os.environ.get("ANTHROPIC_API_KEY"):
+        from local_content import generate_compilation as local_generate_compilation
+        return local_generate_compilation(category, avoid)
+
+    import anthropic
     client = anthropic.Anthropic()
     last_err = None
     for attempt in range(attempts):
@@ -72,7 +77,9 @@ def generate_compilation(category: str = None, avoid: list[str] = None,
             last_err = e
             print(f"Antwort ungültig (Versuch {attempt + 1}/{attempts}): {e} — wiederhole...")
 
-    raise RuntimeError(f"Konnte nach {attempts} Versuchen kein gültiges Skript erzeugen: {last_err}")
+    print(f"Anthropic nicht verfuegbar ({last_err}) - nutze lokale Faktenbank")
+    from local_content import generate_compilation as local_generate_compilation
+    return local_generate_compilation(category, avoid)
 
 
 if __name__ == "__main__":
