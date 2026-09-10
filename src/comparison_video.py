@@ -51,6 +51,21 @@ def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
+def _axis_font(size: int = 18) -> ImageFont.FreeTypeFont:
+    """Compact axis font so every annual tick remains readable."""
+    paths = [
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf",
+    ]
+    for path in paths:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except OSError:
+                continue
+    return _font(size, bold=True)
+
+
 def _money(value: float) -> str:
     value = float(value)
     if abs(value) >= 1_000_000:
@@ -130,9 +145,46 @@ def _downsample(series: list[dict], maximum: int = 220) -> list[dict]:
     return [series[i] for i in indices]
 
 
+def _draw_time_axis(draw: ImageDraw.ImageDraw, series: list[dict], progress: float,
+                    left: int, right: int, bottom: int) -> tuple[str, str]:
+    """Reveal every year as the animated line reaches that year.
+
+    The thin blue cursor follows the line's current time position. Annual ticks
+    slide in from below when their first data point becomes visible, then stay
+    on the axis for the rest of the video.
+    """
+    if not series:
+        return "", ""
+    denominator = max(1, len(series) - 1)
+    first_year_at: dict[str, float] = {}
+    for index, point in enumerate(series):
+        year = str(point.get("date", ""))[:4]
+        if len(year) == 4 and year not in first_year_at:
+            first_year_at[year] = index / denominator
+
+    current_index = min(len(series) - 1, max(0, int(progress * denominator)))
+    current_year = str(series[current_index].get("date", ""))[:4]
+    cursor_x = left + (right - left) * progress
+    draw.line((cursor_x, bottom - 14, cursor_x, bottom + 17), fill=BLUE, width=4)
+
+    font = _axis_font(18)
+    for year, position in first_year_at.items():
+        if position > progress + (1 / denominator):
+            continue
+        reveal = min(1.0, max(0.0, (progress - position) / 0.018))
+        x = left + (right - left) * position
+        y = bottom + 28 + (1.0 - reveal) * 14
+        colour = BLUE if year == current_year else BLACK
+        draw.line((x, bottom, x, bottom + 12), fill=colour, width=2)
+        draw.text((x, y), year, font=font, fill=colour, anchor="ma")
+
+    return str(series[0].get("date", ""))[:4], str(series[-1].get("date", ""))[:4]
+
+
 def _frame(fact: dict, progress: float) -> Image.Image:
     comparison = fact["comparison"]
-    series = _downsample(comparison["series"])
+    full_series = comparison["series"]
+    series = _downsample(full_series)
     initial = float(comparison["initialAmount"])
     values = [float(point["value"]) for point in series]
     final_value = values[-1]
@@ -198,15 +250,12 @@ def _frame(fact: dict, progress: float) -> Image.Image:
     chart_label = comparison.get("chartLabel", comparison["assetLabel"])
     draw.text((label_x, max(top + 14, end_y - 24)), f"{chart_label}\n{_money(label_value)}", font=_font(28, bold=True), fill=BLUE)
 
-    # Date labels and tiny provenance line keep the chart understandable when
-    # the video is reposted without its description.
-    date_labels = [series[0].get("date", "")[:4], series[len(series) // 2].get("date", "")[:4], series[-1].get("date", "")[:4]]
-    for fraction, label in zip((0, 0.5, 1), date_labels):
-        xx = left + (right - left) * fraction
-        draw.text((xx, bottom + 28), label, font=_font(28, bold=True), fill=BLACK, anchor="ma")
+    # The time axis grows with the data instead of showing three static years.
+    # This keeps each annual change synchronized with the moving line.
+    start_year, end_year = _draw_time_axis(draw, full_series, progress, left, right, bottom)
 
     source = comparison.get("asOf", "")[:10]
-    draw.text((52, 1698), f"Historical comparison • {date_labels[0]}–{date_labels[-1]} • data through {source}", font=_font(24), fill=MUTED)
+    draw.text((52, 1698), f"Historical comparison • {start_year}–{end_year} • data through {source}", font=_font(24), fill=MUTED)
     reference_note = comparison.get("referenceNote", "")
     if reference_note:
         draw.text((52, 1738), reference_note, font=_font(20), fill=MUTED)
