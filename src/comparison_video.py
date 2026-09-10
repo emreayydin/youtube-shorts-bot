@@ -338,7 +338,7 @@ def _frame(fact: dict, progress: float) -> Image.Image:
     chart_label = comparison.get("chartLabel", comparison["assetLabel"])
     draw.text((label_x, max(top + 14, end_y - 24)), f"{chart_label}\n{_money(label_value)}", font=_font(28, bold=True), fill=BLUE)
 
-    # The time axis grows with the data instead of showing three static years.
+    # The time axis moves with the data instead of showing three static years.
     # This keeps each annual change synchronized with the moving line.
     start_year, end_year = _draw_time_axis(draw, full_series, progress, left, right, bottom, plot_right=plot_right)
 

@@ -85,6 +85,18 @@ class FinanceRankingTests(unittest.TestCase):
         self.assertEqual(selected["symbol"], "ACWI")
         self.assertEqual(selected["alternativeLabel"], "House")
 
+    def test_comparison_uses_configured_market_fallback(self):
+        points = [
+            {"date": "1998-01-01", "value": 100.0},
+            {"date": "2026-01-01", "value": 250.0},
+        ]
+        with patch.dict("os.environ", {"COMPARISON_SCENARIO": "mercedes-car"}, clear=True), \
+                patch.object(finance_ranking, "_historical_series", side_effect=[RuntimeError("primary unavailable"), (points, "https://example.test/MBGAF")]):
+            content = finance_ranking.generate_comparison()
+
+        self.assertEqual(content["comparison"]["symbol"], "MBGAF")
+        self.assertEqual(content["comparison"]["alternativePhrase"], "buying a Mercedes in 1998")
+
 
 if __name__ == "__main__":
     unittest.main()

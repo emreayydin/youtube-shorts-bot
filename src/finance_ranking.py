@@ -297,7 +297,20 @@ def generate_comparison() -> dict:
     symbol = os.environ.get("COMPARISON_SYMBOL", comparison_config.get("symbol", "SPY")).upper()
     initial = float(os.environ.get("COMPARISON_INITIAL", comparison_config.get("initialAmount", 10_000)))
     lookback_years = int(os.environ.get("COMPARISON_LOOKBACK_YEARS", comparison_config.get("lookbackYears", 10)))
-    series, source_url = _historical_series(symbol, lookback_years=lookback_years)
+    fallback_symbols = comparison_config.get("fallbackSymbols", [])
+    candidates = [symbol] + [str(item).upper() for item in fallback_symbols if str(item).strip()]
+    series = None
+    source_url = ""
+    last_error = None
+    for candidate in dict.fromkeys(candidates):
+        try:
+            series, source_url = _historical_series(candidate, lookback_years=lookback_years)
+            symbol = candidate
+            break
+        except Exception as exc:
+            last_error = exc
+    if series is None:
+        raise last_error or ValueError(f"Keine historischen Daten für {symbol}")
 
     asset_entry = next((item for item in config.get("stockWatchlist", []) if item.get("symbol", "").upper() == symbol), {})
     asset_label = os.environ.get("COMPARISON_LABEL", comparison_config.get("assetLabel") or asset_entry.get("name") or symbol)
@@ -315,6 +328,7 @@ def generate_comparison() -> dict:
     ]
     start_year = value_series[0]["date"][:4]
     end_year = value_series[-1]["date"][:4]
+    alternative_phrase = alternative_phrase.replace("{start_year}", start_year).replace("{end_year}", end_year)
     final_value = value_series[-1]["value"]
     difference = final_value - initial
     sign = "more" if difference >= 0 else "less"

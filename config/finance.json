@@ -53,12 +53,13 @@
     {
       "id": "mercedes-car",
       "symbol": "MBG.DE",
+      "fallbackSymbols": ["MBGAF", "MBGYY"],
       "assetLabel": "Mercedes stock",
       "chartLabel": "Mercedes-Benz",
       "initialAmount": 50000,
       "lookbackYears": 30,
       "alternativeLabel": "Mercedes",
-      "alternativePhrase": "buying a Mercedes in 1996",
+      "alternativePhrase": "buying a Mercedes in {start_year}",
       "alternativeIcon": "car",
       "referenceMode": "purchase"
     },
