@@ -13,8 +13,10 @@ import json
 import hashlib
 import math
 import os
+import time
 import urllib.parse
 import urllib.request
+from urllib.error import HTTPError
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -22,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 FINANCE_CONFIG = ROOT / "config" / "finance.json"
 YAHOO_CHART = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
+YAHOO_CHART_ALTERNATE = "https://query2.finance.yahoo.com/v8/finance/chart/{symbol}"
 COINGECKO_MARKETS = "https://api.coingecko.com/api/v3/coins/markets"
 USER_AGENT = "DifferenceMoneyRanking/1.0 (+https://www.youtube.com/@differencemoney)"
 STABLECOINS = {
@@ -216,30 +219,52 @@ def _historical_series(symbol: str, lookback_years: int = 10) -> tuple[list[dict
         "events": "history",
         "includeAdjustedClose": "true",
     })
-    source_url = YAHOO_CHART.format(symbol=urllib.parse.quote(symbol)) + "?" + params
-    payload = _get_json(source_url)
-    result = (payload.get("chart", {}).get("result") or [None])[0]
-    if not result:
-        raise ValueError(f"Keine historischen Daten für {symbol}")
-
-    timestamps = result.get("timestamp") or []
-    quote = ((result.get("indicators") or {}).get("quote") or [{}])[0]
-    adjusted = ((result.get("indicators") or {}).get("adjclose") or [{}])[0].get("adjclose") or []
-    closes = quote.get("close") or []
-    points = []
-    for index, timestamp in enumerate(timestamps):
-        value = adjusted[index] if index < len(adjusted) and adjusted[index] is not None else (
-            closes[index] if index < len(closes) else None
-        )
-        if value is None:
+    last_error: Exception | None = None
+    retryable_statuses = {429, 500, 502, 503, 504}
+    for endpoint in (YAHOO_CHART, YAHOO_CHART_ALTERNATE):
+        source_url = endpoint.format(symbol=urllib.parse.quote(symbol)) + "?" + params
+        payload = None
+        for attempt in range(2):
+            try:
+                payload = _get_json(source_url)
+                break
+            except HTTPError as exc:
+                last_error = exc
+                if exc.code in retryable_statuses and attempt == 0:
+                    time.sleep(1.5)
+                    continue
+                break
+            except Exception as exc:  # noqa: BLE001 - try the alternate public endpoint
+                last_error = exc
+                break
+        if payload is None:
             continue
-        points.append({
-            "date": datetime.fromtimestamp(timestamp, timezone.utc).strftime("%Y-%m-%d"),
-            "value": float(value),
-        })
-    if len(points) < 2:
-        raise ValueError(f"Zu wenige historische Daten für {symbol}")
-    return points, source_url
+
+        result = (payload.get("chart", {}).get("result") or [None])[0]
+        if not result:
+            last_error = ValueError(f"Keine historischen Daten für {symbol}")
+            continue
+
+        timestamps = result.get("timestamp") or []
+        quote = ((result.get("indicators") or {}).get("quote") or [{}])[0]
+        adjusted = ((result.get("indicators") or {}).get("adjclose") or [{}])[0].get("adjclose") or []
+        closes = quote.get("close") or []
+        points = []
+        for index, timestamp in enumerate(timestamps):
+            value = adjusted[index] if index < len(adjusted) and adjusted[index] is not None else (
+                closes[index] if index < len(closes) else None
+            )
+            if value is None:
+                continue
+            points.append({
+                "date": datetime.fromtimestamp(timestamp, timezone.utc).strftime("%Y-%m-%d"),
+                "value": float(value),
+            })
+        if len(points) >= 2:
+            return points, source_url
+        last_error = ValueError(f"Zu wenige historische Daten für {symbol}")
+
+    raise last_error or ValueError(f"Keine historischen Daten für {symbol}")
 
 
 def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
@@ -297,9 +322,11 @@ def generate_comparison() -> dict:
     """Create a 60+ second Difference Money comparison from live public data."""
     config = load_finance_config()
     comparison_config, scenario_id = _select_comparison_config(config)
-    symbol = os.environ.get("COMPARISON_SYMBOL", comparison_config.get("symbol", "SPY")).upper()
-    initial = float(os.environ.get("COMPARISON_INITIAL", comparison_config.get("initialAmount", 10_000)))
-    lookback_years = int(os.environ.get("COMPARISON_LOOKBACK_YEARS", comparison_config.get("lookbackYears", 10)))
+    symbol = (os.environ.get("COMPARISON_SYMBOL", "").strip() or str(comparison_config.get("symbol", "SPY"))).upper()
+    initial_value = os.environ.get("COMPARISON_INITIAL", "").strip()
+    initial = float(initial_value or comparison_config.get("initialAmount", 10_000))
+    lookback_value = os.environ.get("COMPARISON_LOOKBACK_YEARS", "").strip()
+    lookback_years = int(lookback_value or comparison_config.get("lookbackYears", 10))
     fallback_symbols = comparison_config.get("fallbackSymbols", [])
     candidates = [symbol] + [str(item).upper() for item in fallback_symbols if str(item).strip()]
     series = None
@@ -316,12 +343,22 @@ def generate_comparison() -> dict:
         raise last_error or ValueError(f"Keine historischen Daten für {symbol}")
 
     asset_entry = next((item for item in config.get("stockWatchlist", []) if item.get("symbol", "").upper() == symbol), {})
-    asset_label = os.environ.get("COMPARISON_LABEL", comparison_config.get("assetLabel") or asset_entry.get("name") or symbol)
+    asset_label = os.environ.get("COMPARISON_LABEL", "").strip() or str(
+        comparison_config.get("assetLabel") or asset_entry.get("name") or symbol
+    )
     asset_label = str(asset_label)
-    chart_label = str(os.environ.get("COMPARISON_CHART_LABEL", comparison_config.get("chartLabel") or asset_label.removeprefix("an ")))
-    alternative_label = str(os.environ.get("COMPARISON_ALTERNATIVE_LABEL", comparison_config.get("alternativeLabel", "Cash")))
-    alternative_phrase = str(os.environ.get("COMPARISON_ALTERNATIVE_PHRASE", comparison_config.get("alternativePhrase", "keeping cash")))
-    alternative_icon = str(os.environ.get("COMPARISON_ALTERNATIVE_ICON", comparison_config.get("alternativeIcon", "wallet")))
+    chart_label = os.environ.get("COMPARISON_CHART_LABEL", "").strip() or str(
+        comparison_config.get("chartLabel") or asset_label.removeprefix("an ")
+    )
+    alternative_label = os.environ.get("COMPARISON_ALTERNATIVE_LABEL", "").strip() or str(
+        comparison_config.get("alternativeLabel", "Cash")
+    )
+    alternative_phrase = os.environ.get("COMPARISON_ALTERNATIVE_PHRASE", "").strip() or str(
+        comparison_config.get("alternativePhrase", "keeping cash")
+    )
+    alternative_icon = os.environ.get("COMPARISON_ALTERNATIVE_ICON", "").strip() or str(
+        comparison_config.get("alternativeIcon", "wallet")
+    )
     base = series[0]["value"]
     if base <= 0:
         raise ValueError(f"Ungültiger Startwert für {symbol}")
