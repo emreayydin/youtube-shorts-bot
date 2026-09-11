@@ -246,9 +246,9 @@ def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
     """Select one comparison deterministically for a run.
 
     ``COMPARISON_SCENARIO`` can name a configured scenario for previews or an
-    explicit upload. ``auto`` rotates by the UTC date so retries on the same
-    day remain idempotent and consecutive scheduled days move to another
-    comparison without needing a mutable counter or a secret.
+    explicit upload. ``auto`` rotates by UTC date and two-hour time window, so
+    six scheduled runs can use six different comparisons while a retry in the
+    same window remains idempotent. No mutable counter or secret is needed.
     """
     base = dict(config.get("comparison") or {})
     scenarios = [item for item in config.get("comparisonScenarios", []) if isinstance(item, dict)]
@@ -274,7 +274,10 @@ def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
     else:
         rotation_key = os.environ.get("COMPARISON_ROTATION_KEY", "").strip()
         if not rotation_key:
-            selected = scenarios[datetime.now(timezone.utc).date().toordinal() % len(scenarios)]
+            now = datetime.now(timezone.utc)
+            two_hour_window = (now.hour * 60 + now.minute) // 120
+            rotation_index = (now.date().toordinal() + two_hour_window) % len(scenarios)
+            selected = scenarios[rotation_index]
         else:
             digest = hashlib.sha256(rotation_key.encode("utf-8")).hexdigest()
             selected = scenarios[int(digest[:8], 16) % len(scenarios)]

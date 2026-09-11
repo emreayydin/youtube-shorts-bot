@@ -2,9 +2,9 @@ name: Difference Money Comparison
 
 on:
   schedule:
-    # Ein englischer Vergleichs-Short pro Tag; der Szenario-Selektor rotiert
-    # deterministisch über die konfigurierte Liste.
-    - cron: "0 16 * * *"
+    # Sechs englische Vergleichs-Shorts pro Tag, alle zwei Stunden im
+    # Tagesfenster. Der Szenario-Selektor rotiert pro Zeitfenster.
+    - cron: "0 8,10,12,14,16,18 * * *"
   workflow_dispatch:
     inputs:
       comparison_scenario:

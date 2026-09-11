@@ -145,7 +145,8 @@ in chat. The comparison defaults live in `config/finance.json`; choose the
 ticker deliberately and keep the source/disclaimer in every upload.
 
 The GitHub workflow `.github/workflows/difference_money_ranking.yml` is
-scheduled daily at 16:00 UTC and uses the separate
+scheduled six times daily at 08:00, 10:00, 12:00, 14:00, 16:00 and 18:00 UTC
+and uses the separate
 `DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON` secret. It skips safely until that
 target-channel secret exists; manual runs start in dry-run mode and scheduled
 runs use `public` only after the channel-ID verification gate passes.
