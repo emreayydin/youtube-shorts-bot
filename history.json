@@ -726,5 +726,12 @@
     "kind": "short",
     "category": "Wissenschaft",
     "title": "Haie sind älter als Bäume"
+  },
+  {
+    "date": "2026-09-11 15:09",
+    "ts_utc": "2026-09-11T15:09:27.467508+00:00",
+    "kind": "short",
+    "category": "Technologie",
+    "title": "Der Eiffelturm wächst im Sommer"
   }
 ]
