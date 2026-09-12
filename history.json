@@ -761,5 +761,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Ein Tag auf der Venus dauert länger als ihr Jahr"
+  },
+  {
+    "date": "2026-09-12 17:31",
+    "ts_utc": "2026-09-12T17:31:54.376410+00:00",
+    "kind": "short",
+    "category": "Natur",
+    "title": "Honig kann sehr lange haltbar bleiben"
   }
 ]
