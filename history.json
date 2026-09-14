@@ -817,5 +817,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Ein Tag auf der Venus dauert länger als ihr Jahr"
+  },
+  {
+    "date": "2026-09-14 14:32",
+    "ts_utc": "2026-09-14T14:32:22.280684+00:00",
+    "kind": "short",
+    "category": "Geschichte",
+    "title": "Cleopatra lebte näher an der Mondlandung"
   }
 ]
