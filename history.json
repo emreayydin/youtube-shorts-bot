@@ -845,5 +845,12 @@
     "kind": "short",
     "category": "Biologie",
     "title": "Bananen sind botanisch Beeren"
+  },
+  {
+    "date": "2026-09-15 08:40",
+    "ts_utc": "2026-09-15T08:40:35.014585+00:00",
+    "kind": "short",
+    "category": "Technologie",
+    "title": "Der Eiffelturm wächst im Sommer"
   }
 ]
