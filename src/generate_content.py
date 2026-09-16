@@ -9,6 +9,22 @@ CATEGORIES = [
     "Weltrekorde", "Psychologie", "Astronomie", "Biologie",
 ]
 
+# Gewichte aus den eigenen Zahlen (100 Shorts, Stand 16.09.2026, Median der
+# Aufrufe je Kategorie): Weltrekorde 573, Geschichte 265, Wissenschaft 256,
+# Astronomie 247, Natur 150, Biologie 94, Psychologie 64, Technologie 35.
+# Vorher war die Wahl gleichverteilt - unter den letzten 60 Shorts waren 11
+# zu Technologie und 2 zu Weltrekorden. Jede Kategorie behaelt einen kleinen
+# Anteil, damit sich weiter messen laesst, ob sich das Bild aendert.
+CATEGORY_WEIGHTS = {
+    "Weltrekorde": 30, "Geschichte": 15, "Wissenschaft": 15, "Astronomie": 15,
+    "Natur": 10, "Biologie": 6, "Psychologie": 5, "Technologie": 4,
+}
+
+
+def pick_category() -> str:
+    namen = list(CATEGORY_WEIGHTS)
+    return random.choices(namen, weights=[CATEGORY_WEIGHTS[n] for n in namen])[0]
+
 PROMPT_TEMPLATE = """Du bist Experte für virale YouTube Shorts und schreibst fesselnde Trivia.
 
 Erstelle einen einzelnen, faszinierenden Fakt über das Thema: {category}
@@ -18,6 +34,15 @@ Die ersten 2 Sekunden entscheiden alles. Der HOOK muss ein Pattern-Interrupt sei
 - Erzeugt eine Wissenslücke ("Curiosity Gap") die man füllen MUSS
 - Niemals "Wusstest du?" oder "Stell dir vor"
 - Gute Muster: schockierende Zahl, scheinbarer Widerspruch, "Das ist verboten weil…", "Niemand glaubt dass…"
+
+Diese TITEL liefen auf dem Kanal am besten (je rund 1.000 Aufrufe, der Schnitt
+liegt bei 180) - uebernimm das Muster, nicht den Inhalt:
+- "Dieser Weltrekord dauerte 0,00000001 Sekunden"   (konkrete, absurde Zahl)
+- "Ein Tag auf der Venus dauert länger als ihr Jahr" (Widerspruch in einem Satz)
+- "Dieser Fluss fließt – unter dem Meer"             (Gedankenstrich vor der Wendung)
+- "Dieser Weltrekord wurde nie angetreten – absichtlich"
+Schwach liefen reine Aussagen ohne Wendung ("Honig kann sehr lange haltbar
+bleiben", 2 Aufrufe).
 
 Body-Regeln:
 - Maximal 130 Wörter, in kurzen gesprochenen Sätzen
@@ -44,7 +69,7 @@ Antworte NUR mit einem JSON-Objekt:
 
 def generate_fact(category: str = None, avoid: list[str] = None, attempts: int = 3) -> dict:
     if category is None:
-        category = random.choice(CATEGORIES)
+        category = pick_category()
 
     from history import avoid_block
     prompt = PROMPT_TEMPLATE.format(category=category, avoid=avoid_block(avoid or []))
