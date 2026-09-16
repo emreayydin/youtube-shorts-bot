@@ -887,5 +887,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Ein Tag auf der Venus dauert länger als ihr Jahr"
+  },
+  {
+    "date": "2026-09-16 11:41",
+    "ts_utc": "2026-09-16T11:41:43.363589+00:00",
+    "kind": "short",
+    "category": "Biologie",
+    "title": "Bananen sind botanisch Beeren"
   }
 ]
