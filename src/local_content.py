@@ -8,6 +8,10 @@ datengetrieben in ``finance_ranking.py``.
 from copy import deepcopy
 
 
+class KeineNeuenInhalte(RuntimeError):
+    """Es gibt keinen Fakt, der noch nicht gepostet wurde."""
+
+
 VISUALS = [
     "cinematic scientific illustration, clean composition, no text",
     "macro documentary photography style, soft studio light, no text",
@@ -133,7 +137,14 @@ def _available(category: str | None, avoid: list[str]) -> list[dict]:
     exact = [x for x in FACTS if category and x["category"].lower() == category.lower()]
     pool = exact or list(FACTS)
     fresh = [x for x in pool if x["title"].lower() not in avoid_set]
-    return fresh or pool
+    if not fresh and exact:
+        fresh = [x for x in FACTS if x["title"].lower() not in avoid_set]
+    if not fresh:
+        # Frueher: "fresh or pool" - also einfach von vorne. Eine Wiederholung
+        # kostet mehr als ein ausgefallener Slot (YouTube drueckt sie, und fuer
+        # das Partnerprogramm gilt sie als wiederholender Inhalt).
+        raise KeineNeuenInhalte("Lokale Faktenbank ist aufgebraucht")
+    return fresh
 
 
 def generate_fact(category: str | None = None, avoid: list[str] | None = None) -> dict:

@@ -58,6 +58,10 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
           FAL_KEY: ${{ secrets.FAL_KEY }}   # KI-Bilder; fehlt er, greift Pexels
+          # Ohne diese beiden kam jeder Short aus der lokalen 16er-Bank und
+          # wiederholte sich. Bei leerem Guthaben greift die Bank weiterhin.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_ENABLED: "1"
         run: |
           ARGS=""
           if [ -n "${{ github.event.inputs.category }}" ]; then

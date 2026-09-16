@@ -99,7 +99,15 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
             log.info(f"Ranking: {fact['title']}")
     elif content_mode == "trivia":
         log.info("Generiere Trivia-Fakt...")
-        fact = generate_fact(category, avoid=history.recent_titles(40, kind="short"))
+        from local_content import KeineNeuenInhalte
+        # Dem Modell die juengsten 150 als Liste zeigen (Promptlaenge), aber
+        # gegen ALLE je geposteten Titel pruefen.
+        avoid = sorted(history.all_titles()) + history.recent_titles(150)
+        try:
+            fact = generate_fact(category, avoid=avoid)
+        except KeineNeuenInhalte as e:
+            log.info(f"Slot ausgelassen: {e} - lieber kein Video als eine Wiederholung")
+            return
         log.info(f"Fakt: {fact['title']}")
     else:
         raise ValueError("CONTENT_MODE muss 'trivia' oder 'finance' sein")

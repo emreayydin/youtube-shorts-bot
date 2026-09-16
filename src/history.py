@@ -32,6 +32,16 @@ def recent_titles(n: int = 40, kind: str = None) -> list[str]:
     return [x["title"] for x in items[-n:] if x.get("title")]
 
 
+def all_titles() -> set[str]:
+    """Jeder jemals gepostete Titel, klein geschrieben.
+
+    recent_titles(40) reichte nicht: Die lokale Bank hat 16 Fakten, und
+    YouTube zeigte am 16.09. "Der Eiffelturm waechst im Sommer" fuenfmal auf
+    dem Kanal - die Wiederholungen lagen bei 1 bis 2 Aufrufen.
+    """
+    return {x["title"].strip().lower() for x in _load() if x.get("title")}
+
+
 def add_entry(kind: str, title: str, category: str = "") -> None:
     """Appends a posted item (kind = 'short' or 'long'). Keeps the last 500."""
     items = _load()

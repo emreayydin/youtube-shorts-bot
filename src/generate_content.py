@@ -59,24 +59,29 @@ def generate_fact(category: str = None, avoid: list[str] = None, attempts: int =
     client = anthropic.Anthropic()
     last_err = None
     for attempt in range(attempts):
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1200,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = message.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
         try:
+            message = client.messages.create(
+                model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5"),
+                max_tokens=1200,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            # Neuere Modelle koennen vor dem Text einen Denk-Block liefern.
+            raw = next(b.text for b in message.content
+                       if getattr(b, "type", "") == "text").strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
             data = json.loads(raw.strip())
             if not data.get("body"):
                 raise ValueError("Kein Fakt-Text generiert")
+            title = str(data.get("title", "")).strip().lower()
+            if title in {str(x).strip().lower() for x in (avoid or [])}:
+                raise ValueError(f"Titel schon gepostet: {data.get('title')}")
             return data
-        except (json.JSONDecodeError, ValueError) as e:
+        except Exception as e:  # noqa: BLE001 - Netz, Guthaben, JSON: Bank greift
             last_err = e
-            print(f"Antwort ungültig (Versuch {attempt + 1}/{attempts}): {e} — wiederhole...")
+            print(f"Versuch {attempt + 1}/{attempts} gescheitert: {e}")
 
     print(f"Anthropic nicht verfuegbar ({last_err}) - nutze lokale Faktenbank")
     from local_content import generate_fact as local_generate_fact
