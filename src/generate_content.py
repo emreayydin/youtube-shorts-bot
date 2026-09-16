@@ -55,8 +55,13 @@ def generate_fact(category: str = None, avoid: list[str] = None, attempts: int =
         from local_content import generate_fact as local_generate_fact
         return local_generate_fact(category, avoid)
 
-    import anthropic
-    client = anthropic.Anthropic()
+    try:
+        import anthropic
+        client = anthropic.Anthropic()
+    except Exception as e:  # noqa: BLE001 - fehlendes Paket darf keinen Lauf kippen
+        print(f"anthropic nicht nutzbar ({e}) - lokale Bank")
+        from local_content import generate_fact as _lokal
+        return _lokal(category, avoid)
     last_err = None
     for attempt in range(attempts):
         try:
