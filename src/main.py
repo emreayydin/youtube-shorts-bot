@@ -31,7 +31,10 @@ log = logging.getLogger(__name__)
 OUTPUT_DIR = Path("output")
 
 # Long-form videos publish on these UTC weekdays (Mon=0 … Sun=6): Tue, Thu, Sun.
-LONG_VIDEO_WEEKDAYS = {1, 3, 6}
+# weekly_long.yml ist seit 16.09.2026 abgeschaltet (Langvideos lagen bei
+# 1-8 Aufrufen). Solange es aus ist, bekommt der Kurzvideo-Slot den Platz.
+# Beim Wiedereinschalten hier wieder {1, 3, 6} eintragen.
+LONG_VIDEO_WEEKDAYS = set()
 
 # Self-throttle so the bot paces itself even though GitHub's free cron fires
 # unreliably. The shorts workflow is over-scheduled (hourly across the active
