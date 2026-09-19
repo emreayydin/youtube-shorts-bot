@@ -15,9 +15,12 @@ CATEGORIES = [
 # Vorher war die Wahl gleichverteilt - unter den letzten 60 Shorts waren 11
 # zu Technologie und 2 zu Weltrekorden. Jede Kategorie behaelt einen kleinen
 # Anteil, damit sich weiter messen laesst, ob sich das Bild aendert.
+# Stand 20.09.2026, Median der Aufrufe reifer Videos je Kategorie:
+# Geschichte 256, Astronomie 239, Wissenschaft 171, Weltrekorde 166,
+# Natur 130, Biologie 117, Psychologie 64, Technologie 35.
 CATEGORY_WEIGHTS = {
-    "Weltrekorde": 30, "Geschichte": 15, "Wissenschaft": 15, "Astronomie": 15,
-    "Natur": 10, "Biologie": 6, "Psychologie": 5, "Technologie": 4,
+    "Geschichte": 25, "Astronomie": 22, "Wissenschaft": 15, "Weltrekorde": 15,
+    "Natur": 10, "Biologie": 6, "Psychologie": 4, "Technologie": 3,
 }
 
 
@@ -35,14 +38,24 @@ Die ersten 2 Sekunden entscheiden alles. Der HOOK muss ein Pattern-Interrupt sei
 - Niemals "Wusstest du?" oder "Stell dir vor"
 - Gute Muster: schockierende Zahl, scheinbarer Widerspruch, "Das ist verboten weil…", "Niemand glaubt dass…"
 
-Diese TITEL liefen auf dem Kanal am besten (je rund 1.000 Aufrufe, der Schnitt
-liegt bei 180) - uebernimm das Muster, nicht den Inhalt:
-- "Dieser Weltrekord dauerte 0,00000001 Sekunden"   (konkrete, absurde Zahl)
-- "Ein Tag auf der Venus dauert länger als ihr Jahr" (Widerspruch in einem Satz)
-- "Dieser Fluss fließt – unter dem Meer"             (Gedankenstrich vor der Wendung)
-- "Dieser Weltrekord wurde nie angetreten – absichtlich"
-Schwach liefen reine Aussagen ohne Wendung ("Honig kann sehr lange haltbar
-bleiben", 2 Aufrufe).
+Diese TITEL liefen auf dem Kanal am besten (Median liegt bei 160 Aufrufen):
+- "Dieser Römische Kaiser regierte – 6 Stunden lang"      1.600
+- "Dieser Ozean brennt – unter dem Meeresgrund"           1.200
+- "Dein Körper tötet sich selbst – jeden Tag Milliarden Male"  1.200
+- "Dein Gehirn erfindet 40% deiner Erinnerungen"          1.100
+- "Dieser Weltrekord wurde aus Versehen gebrochen"        1.100
+Gemeinsam ist ihnen der INHALT, nicht die Schreibweise: eine einzelne,
+nachpruefbare Behauptung, die dem gesunden Menschenverstand widerspricht,
+mit einer konkreten Zahl, Zeit oder Menge.
+
+Diese liefen am schlechtesten (1 bis 3 Aufrufe):
+- "Blitze sind heißer als die Sonnenoberfläche"   (kennt jeder)
+- "Honig kann sehr lange haltbar bleiben"         (vage: "sehr lange")
+- "Oxford ist älter als das Aztekenreich"         (kein Bild im Kopf)
+
+Der Gedankenstrich ist KEINE Regel. Im selben Zeitraum gemessen liegen Titel
+mit Gedankenstrich bei 119 Aufrufen, Titel ohne bei 256. Schreib den Titel so,
+wie der Fakt es verlangt.
 
 Body-Regeln:
 - Maximal 130 Wörter, in kurzen gesprochenen Sätzen
