@@ -80,6 +80,41 @@ Antworte NUR mit einem JSON-Objekt:
 }}"""
 
 
+# Wie im Muslim-World-Bot: freies JSON scheiterte an langen Texten mit
+# Anfuehrungszeichen. Ein Werkzeug-Schema liefert strukturierte Felder.
+FACT_TOOL = {
+    "name": "fakt",
+    "description": "Ein Trivia-Fakt fuer ein deutsches YouTube Short.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "title": {"type": "string"},
+            "hook": {"type": "string"},
+            "body": {"type": "string"},
+            "cta": {"type": "string"},
+            "category": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}},
+            "image_prompts": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["title", "hook", "body", "tags", "image_prompts"],
+    },
+}
+
+
+def _unwrap(payload):
+    for _ in range(4):
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except json.JSONDecodeError:
+                return payload
+            continue
+        if isinstance(payload, dict) and "title" not in payload and len(payload) == 1:
+            payload = next(iter(payload.values()))
+            continue
+        break
+    return payload
+
 def generate_fact(category: str = None, avoid: list[str] = None, attempts: int = 3) -> dict:
     if category is None:
         category = pick_category()
@@ -106,23 +141,23 @@ def generate_fact(category: str = None, avoid: list[str] = None, attempts: int =
             message = client.messages.create(
                 model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5"),
                 max_tokens=1200,
+                tools=[FACT_TOOL],
+                tool_choice={"type": "tool", "name": "fakt"},
                 messages=[{"role": "user", "content": prompt}],
             )
-            # Neuere Modelle koennen vor dem Text einen Denk-Block liefern.
-            raw = next(b.text for b in message.content
-                       if getattr(b, "type", "") == "text").strip()
-            if raw.startswith("```"):
-                raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
-            data = json.loads(raw.strip())
+            data = next((_unwrap(b.input) for b in message.content
+                         if getattr(b, "type", "") == "tool_use"), None)
+            if not isinstance(data, dict):
+                raise ValueError("keine strukturierte Antwort")
             if not data.get("body"):
                 raise ValueError("Kein Fakt-Text generiert")
             title = str(data.get("title", "")).strip().lower()
             if title in {str(x).strip().lower() for x in (avoid or [])}:
                 raise ValueError(f"Titel schon gepostet: {data.get('title')}")
+            data.setdefault("category", category)
+            data.setdefault("cta", "Folge fuer taegliche Fakten.")
             return data
-        except Exception as e:  # noqa: BLE001 - Netz, Guthaben, JSON: Bank greift
+        except Exception as e:  # noqa: BLE001 - Netz, Guthaben, Schema: Bank greift
             last_err = e
             print(f"Versuch {attempt + 1}/{attempts} gescheitert: {e}")
 
