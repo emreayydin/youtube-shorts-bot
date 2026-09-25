@@ -1216,5 +1216,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Dieser Stern ist fast so alt wie das Universum selbst"
+  },
+  {
+    "date": "2026-09-25 17:19",
+    "ts_utc": "2026-09-25T17:19:07.425556+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Dieser Planet hat einen Tag länger als sein Jahr"
   }
 ]
