@@ -1223,5 +1223,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Dieser Planet hat einen Tag länger als sein Jahr"
+  },
+  {
+    "date": "2026-09-25 20:19",
+    "ts_utc": "2026-09-25T20:19:11.041970+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Dieser Stern verschwand einfach – spurlos"
   }
 ]
