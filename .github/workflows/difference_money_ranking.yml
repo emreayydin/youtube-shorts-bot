@@ -35,8 +35,8 @@ permissions:
   contents: write
 
 concurrency:
-  # Dieselbe history.json wird auch von den bestehenden YouTube-Workflows
-  # gepflegt; gemeinsame Gruppe verhindert parallele Commit-Rennen.
+  # Eigene Historie je Kanal (history_difference_money.json), aber dieselbe
+  # Git-Ablage; gemeinsame Gruppe verhindert parallele Commit-Rennen.
   group: faktisch-history
   cancel-in-progress: false
 
@@ -71,6 +71,10 @@ jobs:
       COMPARISON_SYMBOL: ${{ inputs.comparison_symbol }}
       TTS_RATE: "+8%"
       VERIFY_CHANNEL_ID: "true"
+      # Drei Vergleichsvideos pro Tag (Emres Vorgabe, 20.09.). Der Kanal hat
+      # seit dem 20.09. eine eigene Historie, das Limit gilt also nur fuer ihn.
+      DAILY_UPLOAD_CAP: "3"
+      MIN_HOURS_BETWEEN: "3.5"
       YOUTUBE_TOKEN_JSON: ${{ secrets.DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON }}
 
     steps:
@@ -107,7 +111,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add history.json
+          git add history.json history_difference_money.json
           if ! git diff --staged --quiet; then
             git commit -m "Record Difference Money upload [skip ci]"
             git fetch origin main

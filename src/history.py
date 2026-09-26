@@ -7,7 +7,24 @@ import json
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-HISTORY_FILE = Path(__file__).resolve().parent.parent / "history.json"
+def _history_file() -> Path:
+    """Eigene Historie je Kanal.
+
+    Bis 20.09.2026 teilten sich Faktastisch und The Difference Money eine
+    Datei. Das Tageslimit und der Mindestabstand rechneten damit ueber beide
+    Kanaele: Ein Faktastisch-Upload eine Stunde zuvor liess den
+    Vergleichs-Workflow "nur 1.0h seit letztem Upload" melden und aussetzen.
+    Beide Kanaele haengen an verschiedenen Google-Projekten und haben
+    deshalb auch getrennte Kontingente.
+    """
+    import os
+    wurzel = Path(__file__).resolve().parent.parent
+    mode = os.environ.get("CHANNEL_MODE", "faktisch").strip().lower()
+    if mode and mode != "faktisch":
+        return wurzel / f"history_{mode}.json"
+    return wurzel / "history.json"
+
+
 
 # YouTube's daily upload quota resets at midnight US Pacific. We approximate that
 # boundary at 08:00 UTC (exact in winter PST; 1h off in summer PDT — harmless
@@ -16,9 +33,10 @@ QUOTA_RESET_UTC_HOUR = 8
 
 
 def _load() -> list[dict]:
-    if HISTORY_FILE.exists():
+    datei = _history_file()
+    if datei.exists():
         try:
-            return json.loads(HISTORY_FILE.read_text())
+            return json.loads(datei.read_text())
         except Exception:
             return []
     return []
@@ -52,7 +70,7 @@ def add_entry(kind: str, title: str, category: str = "") -> None:
         "category": category,
         "title": title,
     })
-    HISTORY_FILE.write_text(json.dumps(items[-500:], ensure_ascii=False, indent=2))
+    _history_file().write_text(json.dumps(items[-500:], ensure_ascii=False, indent=2))
 
 
 # ---------- quota / spacing helpers (reliable pacing under a flaky cron) ----------
