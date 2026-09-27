@@ -12,6 +12,7 @@ __pycache__/
 *.json
 !requirements.txt
 !history.json
+!history_*.json
 !config/
 !config/*.json
 
