@@ -18,9 +18,13 @@ CATEGORIES = [
 # Stand 20.09.2026, Median der Aufrufe reifer Videos je Kategorie:
 # Geschichte 256, Astronomie 239, Wissenschaft 171, Weltrekorde 166,
 # Natur 130, Biologie 117, Psychologie 64, Technologie 35.
+# Stand 28.09.2026, Shorts vom 17.-26.09. (n=42, Median je Kategorie):
+# Astronomie 237 (7), Natur 105 (5), Weltrekorde 10 (10), Biologie 5 (5),
+# Geschichte 3 (10). Kanal gesamt: Astronomie 235, Wissenschaft 171, Natur 119,
+# Geschichte 101. Astronomie ist in beiden Zeitraeumen vorn, Geschichte faellt.
 CATEGORY_WEIGHTS = {
-    "Geschichte": 25, "Astronomie": 22, "Wissenschaft": 15, "Weltrekorde": 15,
-    "Natur": 10, "Biologie": 6, "Psychologie": 4, "Technologie": 3,
+    "Astronomie": 30, "Natur": 20, "Wissenschaft": 15, "Geschichte": 12,
+    "Weltrekorde": 10, "Biologie": 6, "Psychologie": 4, "Technologie": 3,
 }
 
 
