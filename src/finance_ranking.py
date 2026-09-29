@@ -267,6 +267,37 @@ def _historical_series(symbol: str, lookback_years: int = 10) -> tuple[list[dict
     raise last_error or ValueError(f"Keine historischen Daten für {symbol}")
 
 
+def _scenario_title_key(scenario: dict) -> str:
+    """Title fragment that identifies a scenario in the upload history."""
+    asset = str(scenario.get("assetLabel") or scenario.get("symbol") or "")
+    alternative = str(scenario.get("alternativeLabel") or "")
+    return f" in {asset} vs {alternative}:".lower()
+
+
+def _least_recently_used(ordered: list[dict]) -> dict:
+    """Pick the scenario whose last upload lies furthest back.
+
+    Date plus two-hour window alone repeated whole days: on 27.09. the three
+    uploads ran in windows 5/7/9, on 28.09. in windows 4/6/8 - one day later
+    and one window earlier gives the same index, so Mercedes, eBay and Solana
+    went out twice. Never-used scenarios win; ties keep the rotation order.
+    """
+    try:
+        import history
+        titles = [str(x.get("title", "")).lower() for x in history._load()]
+    except Exception:
+        return ordered[0]
+
+    def last_use(scenario: dict) -> int:
+        key = _scenario_title_key(scenario)
+        for position in range(len(titles) - 1, -1, -1):
+            if key in titles[position]:
+                return position
+        return -1
+
+    return min(ordered, key=last_use)
+
+
 def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
     """Select one comparison deterministically for a run.
 
@@ -302,7 +333,8 @@ def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
             now = datetime.now(timezone.utc)
             two_hour_window = (now.hour * 60 + now.minute) // 120
             rotation_index = (now.date().toordinal() + two_hour_window) % len(scenarios)
-            selected = scenarios[rotation_index]
+            ordered = scenarios[rotation_index:] + scenarios[:rotation_index]
+            selected = _least_recently_used(ordered)
         else:
             digest = hashlib.sha256(rotation_key.encode("utf-8")).hexdigest()
             selected = scenarios[int(digest[:8], 16) % len(scenarios)]
