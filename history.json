@@ -1335,5 +1335,12 @@
     "kind": "short",
     "category": "Geschichte",
     "title": "Dieser Krieg begann wegen einem gestohlenen Eimer"
+  },
+  {
+    "date": "2026-09-29 23:16",
+    "ts_utc": "2026-09-29T23:16:43.457333+00:00",
+    "kind": "short",
+    "category": "Wissenschaft",
+    "title": "Dieses Elektron ist älter als das Universum selbst"
   }
 ]
