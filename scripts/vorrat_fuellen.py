@@ -65,7 +65,12 @@ def main():
     if args.trocken or neu == 0:
         return
     git("add", "vorrat")
-    git("commit", "-q", "-m", f"Vorrat: {neu} neue Fakten (lokal erzeugt) [skip ci]")
+    # Am 01.10. schloss .gitignore (*.json) den Vorrat aus: nichts committet,
+    # trotzdem "gepusht" gemeldet. Jetzt wird das geprueft.
+    if git("diff", "--cached", "--quiet", "--", "vorrat").returncode == 0:
+        sys.exit("Nichts zum Committen - ist vorrat/ in .gitignore ausgeschlossen?")
+    if git("commit", "-q", "-m", f"Vorrat: {neu} neue Fakten (lokal erzeugt) [skip ci]").returncode != 0:
+        sys.exit("Commit gescheitert")
     for _ in range(3):
         if git("pull", "-q", "--rebase", "--autostash").returncode == 0 and git("push", "-q").returncode == 0:
             print("gepusht"); return
