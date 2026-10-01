@@ -132,6 +132,14 @@ FACTS = [
 ]
 
 
+# Die grosse, gepruefte Sammlung (seit 01.10.2026, wird woechentlich vom
+# Kanal-Agenten ergaenzt). Doppelte Titel zaehlen nur einmal.
+from faktenbank import FAKTENBANK  # noqa: E402
+
+_bekannt = {x["title"].lower() for x in FACTS}
+FACTS = FACTS + [x for x in FAKTENBANK if x["title"].lower() not in _bekannt]
+
+
 def _available(category: str | None, avoid: list[str]) -> list[dict]:
     avoid_set = {str(x).strip().lower() for x in (avoid or [])}
     exact = [x for x in FACTS if category and x["category"].lower() == category.lower()]
@@ -151,7 +159,7 @@ def generate_fact(category: str | None = None, avoid: list[str] | None = None) -
     pool = _available(category, avoid or [])
     item = pool[len(avoid or []) % len(pool)]
     data = deepcopy(item)
-    data["image_prompts"] = list(VISUALS)
+    data["image_prompts"] = list(item.get("image_prompts") or VISUALS)
     data["sources"] = list(item["sources"])
     return data
 

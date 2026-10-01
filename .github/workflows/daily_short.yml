@@ -58,11 +58,11 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
           FAL_KEY: ${{ secrets.FAL_KEY }}   # KI-Bilder; fehlt er, greift Pexels
-          # Vorerst wieder Claude: Lokal erzeugte Fakten fielen am 01.10.2026
-          # ueberwiegend durch die Faktenpruefung (1 von 18 korrekt). Ist
-          # vorrat/ gefuellt, kommen die Texte zuerst von dort.
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          ANTHROPIC_ENABLED: "1"
+          # Kostenlos seit 01.10.2026: Texte kommen aus der geprueften Sammlung
+          # src/faktenbank.py (woechentlich vom Kanal-Agenten nachgefuellt).
+          # Keine bezahlte API. Ist die Sammlung leer, faellt der Slot aus -
+          # nie eine Wiederholung.
+          ANTHROPIC_ENABLED: "0"
         run: |
           ARGS=""
           if [ -n "${{ github.event.inputs.category }}" ]; then
