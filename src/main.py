@@ -110,8 +110,15 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
         # Dem Modell die juengsten 150 als Liste zeigen (Promptlaenge), aber
         # gegen ALLE je geposteten Titel pruefen.
         avoid = sorted(history.all_titles()) + history.recent_titles(150)
+        import vorrat
+        # Zuerst der Vorrat, den der Mac nachts mit der lokalen KI schreibt
+        # (seit 01.10.2026 keine bezahlte API mehr). Ein Probelauf nimmt nur
+        # Einblick und loescht nichts.
+        fact = vorrat.nimm(history.all_titles(), verbrauchen=not dry_run) if category is None else None
+        if fact:
+            log.info(f"Aus dem Vorrat ({len(vorrat.dateien())} uebrig)")
         try:
-            fact = generate_fact(category, avoid=avoid)
+            fact = fact or generate_fact(category, avoid=avoid)
         except KeineNeuenInhalte as e:
             log.info(f"Slot ausgelassen: {e} - lieber kein Video als eine Wiederholung")
             return
