@@ -117,5 +117,12 @@
     "kind": "short",
     "category": "Finance",
     "title": "$1,000 in eBay stock vs Cash: 1998–2026"
+  },
+  {
+    "date": "2026-10-03 08:55",
+    "ts_utc": "2026-10-03T08:55:02.968224+00:00",
+    "kind": "short",
+    "category": "Finance",
+    "title": "$53.0 million in Solana vs Transfer fee: 2020–2026"
   }
 ]
