@@ -1,8 +1,8 @@
 name: Faktenbank nachfuellen (Gemini)
 
 # Seit 06.10.2026: fuellt montags die Faktensammlung mit Gemini auf, damit
-# Emres Mac dafuer nicht laufen muss. Jeder Fakt wird mit Google-Suche
-# geschrieben und gegengeprueft (scripts/gemini_kern.py). Kostenlos ueber
+# Emres Mac dafuer nicht laufen muss. Jeder Eintrag wird gegen Wikipedia
+# gegengeprueft (scripts/gemini_kern.py). Kostenlos ueber
 # das AI-Studio-Kontingent.
 on:
   schedule:

@@ -41,7 +41,7 @@ def _anfrage(pfad, daten=None, versuche=3):
             headers={"x-goog-api-key": schluessel, "Content-Type": "application/json"},
             method="POST" if daten is not None else "GET")
         try:
-            with urllib.request.urlopen(req, timeout=300) as antwort:
+            with urllib.request.urlopen(req, timeout=180) as antwort:
                 return json.loads(antwort.read())
         except urllib.error.HTTPError as fehler:
             if fehler.code in (500, 503) and versuch < versuche - 1:
@@ -80,31 +80,43 @@ def modelle():
 SUCHE = os.environ.get("GEMINI_SUCHE") == "1"
 
 
-def frage(text, suche=None, temperatur=0.7):
-    """Ein Aufruf; wechselt bei Kontingent- oder Modellfehlern zum naechsten Modell."""
+def frage(text, suche=None, temperatur=0.7, durchgaenge=4):
+    """Ein Aufruf. Bei Ueberlastung (503/500/Zeitueberschreitung) naechstes Modell,
+    nach einem ganzen erfolglosen Durchgang warten und erneut versuchen.
+    Modelle, die es nicht (mehr) gibt (404), fliegen fuer diesen Lauf raus."""
     letzter = None
-    for modell in modelle():
-        daten = {"contents": [{"role": "user", "parts": [{"text": text}]}],
-                 "generationConfig": {"temperature": temperatur}}
-        if SUCHE if suche is None else suche:
-            daten["tools"] = [{"google_search": {}}]
-        try:
-            antwort = _anfrage(f"models/{modell}:generateContent", daten)
-        except urllib.error.HTTPError as fehler:
+    for durchgang in range(durchgaenge):
+        if durchgang:
+            print(f"   alle Modelle ausgelastet - warte {60 * durchgang} s")
+            time.sleep(60 * durchgang)
+        for modell in list(modelle()):
+            daten = {"contents": [{"role": "user", "parts": [{"text": text}]}],
+                     "generationConfig": {"temperature": temperatur}}
+            if SUCHE if suche is None else suche:
+                daten["tools"] = [{"google_search": {}}]
             try:
-                meldung = json.loads(fehler.read()).get("error", {}).get("message", "")
-            except Exception:  # noqa: BLE001
-                meldung = ""
-            letzter = f"{modell}: HTTP {fehler.code} {meldung[:300]}"
-            print("  ", letzter)
-            continue
-        finally:
-            time.sleep(PAUSE)
-        teile = (((antwort.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
-        inhalt = "".join(t.get("text", "") for t in teile)
-        if inhalt.strip():
-            return inhalt
-        letzter = f"{modell}: leere Antwort"
+                antwort = _anfrage(f"models/{modell}:generateContent", daten, versuche=1)
+            except urllib.error.HTTPError as fehler:
+                try:
+                    meldung = json.loads(fehler.read()).get("error", {}).get("message", "")
+                except Exception:  # noqa: BLE001
+                    meldung = ""
+                letzter = f"{modell}: HTTP {fehler.code} {meldung[:160]}"
+                print("  ", letzter)
+                if fehler.code in (400, 403, 404):
+                    _modelle.remove(modell)
+                continue
+            except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as fehler:
+                letzter = f"{modell}: {type(fehler).__name__}"
+                print("  ", letzter)
+                continue
+            finally:
+                time.sleep(PAUSE)
+            teile = (((antwort.get("candidates") or [{}])[0].get("content") or {}).get("parts") or [])
+            inhalt = "".join(t.get("text", "") for t in teile)
+            if inhalt.strip():
+                return inhalt
+            letzter = f"{modell}: leere Antwort"
     raise RuntimeError(f"Kein Gemini-Modell antwortete ({letzter})")
 
 
