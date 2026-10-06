@@ -41,7 +41,7 @@ def _anfrage(pfad, daten=None, versuche=4):
             with urllib.request.urlopen(req, timeout=300) as antwort:
                 return json.loads(antwort.read())
         except urllib.error.HTTPError as fehler:
-            if fehler.code in (429, 500, 503) and versuch < versuche - 1:
+            if fehler.code in (500, 503) and versuch < versuche - 1:
                 time.sleep(30 * (versuch + 1))
                 continue
             raise
@@ -85,7 +85,11 @@ def frage(text, suche=True, temperatur=0.7):
         try:
             antwort = _anfrage(f"models/{modell}:generateContent", daten)
         except urllib.error.HTTPError as fehler:
-            letzter = f"{modell}: HTTP {fehler.code}"
+            try:
+                meldung = json.loads(fehler.read()).get("error", {}).get("message", "")
+            except Exception:  # noqa: BLE001
+                meldung = ""
+            letzter = f"{modell}: HTTP {fehler.code} {meldung[:300]}"
             print("  ", letzter)
             continue
         finally:
@@ -147,3 +151,14 @@ def schreibe_modul(pfad, name, eintraege, kopf):
     text = f'"""{kopf}"""\n\n{name} = ' + pprint.pformat(eintraege, width=100, sort_dicts=False) + "\n"
     compile(text, str(pfad), "exec")
     pfad.write_text(text, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    # Diagnose: je ein Aufruf mit und ohne Google-Suche pro Modell.
+    for m in modelle():
+        for suche in (False, True):
+            _modelle = [m]
+            try:
+                print(m, "Suche" if suche else "ohne", "->", frage("Say OK.", suche=suche)[:40])
+            except RuntimeError as f:
+                print(m, "Suche" if suche else "ohne", "->", f)
