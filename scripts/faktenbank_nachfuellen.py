@@ -2,8 +2,8 @@
 
 Ziel: mindestens ZIEL frische Fakten (Titel noch nie gepostet). Neue Fakten
 landen in src/faktenbank_neu.py; local_content.py nimmt sie in die Auswahl.
-Jeder Fakt wird mit Google-Suche geschrieben und unabhaengig gegengeprueft
-(siehe gemini_kern.py). Ergebnis: Exitcode 0, auch wenn das Ziel nicht
+Jeder Fakt muss zwei Wikipedia-Artikel nennen; das Skript laedt sie und ein
+zweiter Gemini-Aufruf prueft jeden Satz gegen diesen Text (gemini_kern.py). Ergebnis: Exitcode 0, auch wenn das Ziel nicht
 erreicht wird - dann meldet der Lauf nur, wie viele fehlen.
 
     python scripts/faktenbank_nachfuellen.py            # auffuellen
@@ -30,9 +30,10 @@ PRO_AUFRUF = 6
 MAX_RUNDEN = 12
 
 AUFTRAG = """Du schreibst Fakten fuer den deutschen YouTube-Shorts-Kanal "Faktastisch".
-Nutze die Google-Suche und schreibe NUR Fakten, die du an zuverlaessigen Quellen
-(Museen, Universitaeten, NASA/ESA, Britannica, Fachzeitschriften, Guinness)
-belegt gefunden hast. Lieber weniger Fakten als ein unsicherer.
+Schreibe NUR Fakten, die gut belegt sind und genau so in einem
+Wikipedia-Artikel stehen. Jeder Fakt wird automatisch gegen diesen Artikel
+geprueft - steht etwas nicht drin, fliegt er raus. Lieber weniger Fakten als
+ein unsicherer. Keine Zahl, die du nicht sicher weisst.
 
 Schreibe {anzahl} neue Fakten aus der Kategorie "{kategorie}".
 
@@ -48,7 +49,9 @@ Format je Fakt:
   Namen genau. Keine Uebertreibung.
 - cta: eine Frage an die Zuschauer.
 - tags: 5 deutsche Schlagwoerter.
-- sources: 1-2 echte Quellen als "Herausgeber: Titel".
+- sources: 1-2 echte Quellen als "Herausgeber: Titel" (z. B. NASA, Britannica).
+- wikipedia: 1-2 exakte Artikeltitel mit Sprachkuerzel, in denen alle Angaben
+  stehen, z. B. ["de:Emu-Krieg", "en:Emu War"].
 - image_prompts: genau 4 englische Bildbeschreibungen, jede endet mit ", no text".
 
 Antworte NUR mit einem JSON-Array dieser Objekte in einem ```json Block.
@@ -118,9 +121,16 @@ def main():
                 verworfen += 1
                 print(f"  verworfen ({grund}): {f.get('title')}")
                 continue
+            belege = "\n\n".join(f"[{w}]\n{g.wiki_text(w)}" for w in (f.get("wikipedia") or [])[:2])
+            if len(belege) < 400:
+                verworfen += 1
+                print(f"  verworfen (kein Wikipedia-Artikel gefunden): {f['title']}")
+                continue
             ok, warum = g.pruefen(
-                {k: f[k] for k in ("title", "hook", "body", "sources")},
-                "The text is German. The title must be accurate, not misleading.")
+                {k: f[k] for k in ("title", "hook", "body")},
+                "The text is German, the reference may be German or English. "
+                "The title must be accurate, not misleading.",
+                zusatz=f"REFERENCE TEXT (Wikipedia):\n{belege}\n")
             if not ok:
                 verworfen += 1
                 print(f"  Pruefung nein: {f['title']} - {warum}")

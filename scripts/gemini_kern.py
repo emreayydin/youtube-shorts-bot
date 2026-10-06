@@ -6,13 +6,16 @@ GEMINI_API_KEY (Google AI Studio, kostenloses Kontingent).
 
 Gleiche Datei in youtube-shorts-bot, muslim-world-bot und versus.
 
-Zwei Schutzschichten gegen erfundene Fakten (das lokale Modell lag am
-01.10. bei 1 von 18):
-1. erzeugen() schreibt mit eingeschalteter Google-Suche, also an echten
-   Quellen entlang statt aus dem Gedaechtnis.
-2. pruefen() laesst jeden Eintrag in einem eigenen Aufruf, wieder mit
-   Suche, gegenlesen. Nur "ok": true kommt in die Sammlung.
-Danach greifen die festen Pruefungen des jeweiligen Kanals.
+Schutz gegen erfundene Fakten (das lokale Modell lag am 01.10. bei 1 von 18):
+pruefen() laesst jeden Eintrag in einem eigenen Aufruf gegenlesen - und zwar
+gegen echten Text, den das Skript selbst holt (Wikipedia-Artikel, Korantext).
+Nur "ok": true kommt in die Sammlung. Danach greifen die festen Pruefungen
+des jeweiligen Kanals.
+
+Kostenloses Kontingent (getestet 06.10.2026): Flash-Modelle antworten, die
+Google-Suche und die Pro-Modelle liefern 429 "quota exceeded". Deshalb ist
+die Suche standardmaessig aus (GEMINI_SUCHE=1 schaltet sie ein) und Pro nur
+mit GEMINI_PRO=1 - etwa wenn spaeter ein bezahlter Schluessel hinterlegt ist.
 """
 import json
 import os
@@ -27,7 +30,7 @@ PAUSE = float(os.environ.get("GEMINI_PAUSE_SEC", "13"))   # kostenloses Kontinge
 _modelle = None
 
 
-def _anfrage(pfad, daten=None, versuche=4):
+def _anfrage(pfad, daten=None, versuche=3):
     schluessel = os.environ.get("GEMINI_API_KEY", "")
     if not schluessel:
         raise SystemExit("GEMINI_API_KEY fehlt")
@@ -42,7 +45,7 @@ def _anfrage(pfad, daten=None, versuche=4):
                 return json.loads(antwort.read())
         except urllib.error.HTTPError as fehler:
             if fehler.code in (500, 503) and versuch < versuche - 1:
-                time.sleep(30 * (versuch + 1))
+                time.sleep(20 * (versuch + 1))
                 continue
             raise
 
@@ -65,7 +68,7 @@ def modelle():
             if not name.startswith("gemini-") or any(
                     x in name for x in ("tts", "image", "embedding", "live", "lite", "audio", "robotics", "computer")):
                 continue
-            if "-pro" not in name and "-flash" not in name:
+            if "-flash" not in name and not ("-pro" in name and os.environ.get("GEMINI_PRO") == "1"):
                 continue
             brauchbar.append(name)
         brauchbar.sort(key=lambda n: (_version(n), "-pro" in n, "preview" not in n), reverse=True)
@@ -74,13 +77,16 @@ def modelle():
     return _modelle
 
 
-def frage(text, suche=True, temperatur=0.7):
+SUCHE = os.environ.get("GEMINI_SUCHE") == "1"
+
+
+def frage(text, suche=None, temperatur=0.7):
     """Ein Aufruf; wechselt bei Kontingent- oder Modellfehlern zum naechsten Modell."""
     letzter = None
     for modell in modelle():
         daten = {"contents": [{"role": "user", "parts": [{"text": text}]}],
                  "generationConfig": {"temperature": temperatur}}
-        if suche:
+        if SUCHE if suche is None else suche:
             daten["tools"] = [{"google_search": {}}]
         try:
             antwort = _anfrage(f"models/{modell}:generateContent", daten)
@@ -129,13 +135,13 @@ def erzeugen(auftrag):
 def pruefen(eintrag, hinweis="", zusatz=""):
     """Unabhaengiges Gegenlesen mit Google-Suche. True nur bei klarer Bestaetigung."""
     auftrag = (
-        "You are a strict fact checker. Use Google Search. Check EVERY factual claim, "
-        "number, date, name and source reference in the entry below. "
+        "You are a strict fact checker. Check EVERY factual claim, number, date, name "
+        "and source reference in the entry below against the REFERENCE TEXT. "
         f"{hinweis}\n"
         "Answer ONLY with JSON: {\"ok\": true|false, \"reason\": \"short\"}. "
-        "ok is true only if every claim is confirmed by reliable sources and the cited "
-        "source exists and supports it. If anything is wrong, doubtful, exaggerated or "
-        "unverifiable, ok is false.\n\n"
+        "ok is true only if every claim is directly supported by the reference text. "
+        "If anything is wrong, doubtful, exaggerated, or simply not in the reference "
+        "text, ok is false - your own memory does not count as support.\n\n"
         f"{zusatz}\nENTRY:\n{json.dumps(eintrag, ensure_ascii=False, indent=1)}")
     try:
         urteil = json_aus(frage(auftrag, temperatur=0.0))
@@ -143,6 +149,24 @@ def pruefen(eintrag, hinweis="", zusatz=""):
         print("  Pruefung gescheitert:", fehler)
         return False, str(fehler)
     return urteil.get("ok") is True, str(urteil.get("reason", ""))[:200]
+
+
+def wiki_text(angabe, zeichen=12000):
+    """Klartext eines Wikipedia-Artikels, angegeben als "de:Titel" oder "en:Titel"."""
+    import urllib.parse
+    sprache, _, titel = str(angabe).partition(":")
+    if sprache not in ("de", "en") or not titel.strip():
+        return ""
+    url = (f"https://{sprache}.wikipedia.org/w/api.php?action=query&prop=extracts"
+           f"&explaintext=1&redirects=1&format=json&titles={urllib.parse.quote(titel.strip())}")
+    req = urllib.request.Request(url, headers={"User-Agent": "faktastisch-bot/1.0 (github.com/emreayydin)"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            seiten = json.loads(r.read())["query"]["pages"]
+    except Exception:  # noqa: BLE001 - Netz/Format: gilt als nicht gefunden
+        return ""
+    text = next(iter(seiten.values())).get("extract", "") or ""
+    return text[:zeichen]
 
 
 def schreibe_modul(pfad, name, eintraege, kopf):
