@@ -136,8 +136,16 @@ FACTS = [
 # Kanal-Agenten ergaenzt). Doppelte Titel zaehlen nur einmal.
 from faktenbank import FAKTENBANK  # noqa: E402
 
+try:  # von Gemini montags nachgefuellt (scripts/faktenbank_nachfuellen.py)
+    from faktenbank_neu import NEU as _NEU  # noqa: E402
+except ImportError:
+    _NEU = []
+
 _bekannt = {x["title"].lower() for x in FACTS}
-FACTS = FACTS + [x for x in FAKTENBANK if x["title"].lower() not in _bekannt]
+for _x in FAKTENBANK + _NEU:
+    if _x["title"].lower() not in _bekannt:
+        FACTS.append(_x)
+        _bekannt.add(_x["title"].lower())
 
 
 def _available(category: str | None, avoid: list[str]) -> list[dict]:
