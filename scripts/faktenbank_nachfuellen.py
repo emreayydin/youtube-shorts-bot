@@ -1,10 +1,13 @@
-"""Faktastisch: Faktensammlung montags mit Gemini auffuellen (laeuft auf GitHub).
+"""Faktastisch: Faktensammlung taeglich kostenlos auffuellen (laeuft auf GitHub).
 
 Ziel: mindestens ZIEL frische Fakten (Titel noch nie gepostet). Neue Fakten
 landen in src/faktenbank_neu.py; local_content.py nimmt sie in die Auswahl.
 Jeder Fakt muss zwei Wikipedia-Artikel nennen; das Skript laedt sie und ein
-zweiter Gemini-Aufruf prueft jeden Satz gegen diesen Text (gemini_kern.py). Ergebnis: Exitcode 0, auch wenn das Ziel nicht
-erreicht wird - dann meldet der Lauf nur, wie viele fehlen.
+zweiter Aufruf - moeglichst bei einem anderen Anbieter - prueft jeden Satz
+gegen diesen Text (ki_kern.py: Groq, Mistral, Gemini im Gratis-Kontingent).
+Pro Lauf hoechstens PRO_LAUF neue Fakten, damit die Tageslimits reichen.
+Exitcode 0, auch wenn das Ziel nicht erreicht wird - dann meldet der Lauf
+nur, wie viele fehlen.
 
     python scripts/faktenbank_nachfuellen.py            # auffuellen
     python scripts/faktenbank_nachfuellen.py --anzahl 3 # kleiner Test
@@ -19,13 +22,14 @@ WURZEL = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(WURZEL / "src"))
 sys.path.insert(0, str(WURZEL / "scripts"))
 
-import gemini_kern as g  # noqa: E402
+import ki_kern as g  # noqa: E402
 import history  # noqa: E402
 import local_content  # noqa: E402
 from generate_content import CATEGORY_WEIGHTS  # noqa: E402
 
 NEU_DATEI = WURZEL / "src" / "faktenbank_neu.py"
 ZIEL = int(os.environ.get("FAKTEN_ZIEL", "45"))
+PRO_LAUF = int(os.environ.get("PRO_LAUF", "10"))
 PRO_AUFRUF = 6
 MAX_RUNDEN = 12
 
@@ -94,6 +98,7 @@ def main():
         NEU = []
     NEU = list(NEU)
     fehlend = max(0, ZIEL - len(frische(local_content.FACTS)))
+    fehlend = min(fehlend, PRO_LAUF)
     if args.anzahl is not None:
         fehlend = args.anzahl
     print(f"Frische Fakten: {len(frische(local_content.FACTS))}, Ziel {ZIEL}, fehlen {fehlend}")
@@ -111,7 +116,7 @@ def main():
         print(f"Runde {runde + 1}: {kategorie}")
         vorschlaege = g.erzeugen(AUFTRAG.format(
             anzahl=PRO_AUFRUF, kategorie=kategorie,
-            schon="\n".join(f"- {t}" for t in schon[-400:])))
+            schon="\n".join(f"- {t}" for t in schon[-150:])))
         for f in vorschlaege:
             if len(neu) >= fehlend:
                 break
@@ -121,7 +126,9 @@ def main():
                 verworfen += 1
                 print(f"  verworfen ({grund}): {f.get('title')}")
                 continue
-            belege = "\n\n".join(f"[{w}]\n{g.wiki_text(w)}" for w in (f.get("wikipedia") or [])[:2])
+            stichworte = f"{f['title']} {f['body']}"
+            belege = "\n\n".join(f"[{w}]\n{g.wiki_text(w, stichworte)}"
+                                 for w in (f.get("wikipedia") or [])[:2])
             if len(belege) < 400:
                 verworfen += 1
                 print(f"  verworfen (kein Wikipedia-Artikel gefunden): {f['title']}")
@@ -144,7 +151,7 @@ def main():
 
     if neu:
         g.schreibe_modul(NEU_DATEI, "NEU", NEU + neu,
-                         "Von Gemini geschriebene und gegengepruefte Fakten "
+                         "Automatisch geschriebene, gegen Wikipedia gepruefte Fakten "
                          "(scripts/faktenbank_nachfuellen.py). Nicht von Hand ordnen.")
     print(f"Ergebnis: {len(neu)} neu, {verworfen} verworfen, "
           f"noch fehlend {max(0, fehlend - len(neu))}")
