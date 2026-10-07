@@ -101,8 +101,10 @@ def main():
     fehlend = min(fehlend, PRO_LAUF)
     if args.anzahl is not None:
         fehlend = args.anzahl
-    print(f"Frische Fakten: {len(frische(local_content.FACTS))}, Ziel {ZIEL}, fehlen {fehlend}")
+    frisch_vorher = len(frische(local_content.FACTS))
+    print(f"Frische Fakten: {frisch_vorher}, Ziel {ZIEL}, fehlen {fehlend}")
     if not fehlend:
+        g.bericht("Faktastisch", frisch_vorher, 0, 0, 12, 6)
         return
 
     bekannt = {t.lower() for t in history.all_titles()} | {f["title"].lower() for f in local_content.FACTS}
@@ -155,6 +157,7 @@ def main():
                          "(scripts/faktenbank_nachfuellen.py). Nicht von Hand ordnen.")
     print(f"Ergebnis: {len(neu)} neu, {verworfen} verworfen, "
           f"noch fehlend {max(0, fehlend - len(neu))}")
+    g.bericht("Faktastisch", frisch_vorher, len(neu), fehlend, 12, 6)
 
 
 if __name__ == "__main__":

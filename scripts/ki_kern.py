@@ -240,6 +240,34 @@ def wiki_text(angabe, stichworte="", zeichen=5000):
     return "\n".join(auswahl)
 
 
+def melde(titel, text, wichtig=False):
+    """Push aufs Handy ueber ntfy (NTFY_TOPIC als GitHub-Secret), auch ohne Mac."""
+    thema = os.environ.get("NTFY_TOPIC", "")
+    if not thema:
+        return
+    nutzlast = {"topic": thema, "title": titel, "message": text[:3000],
+                "priority": 4 if wichtig else 2, "tags": ["tv"]}
+    try:
+        urllib.request.urlopen(urllib.request.Request(
+            "https://ntfy.sh", data=json.dumps(nutzlast).encode("utf-8"), method="POST",
+            headers={"Content-Type": "application/json"}), timeout=20).read()
+    except Exception as fehler:  # noqa: BLE001 - eine fehlende Push darf den Lauf nicht kippen
+        print("Push fehlgeschlagen:", type(fehler).__name__)
+
+
+def bericht(kanal, frisch_vorher, neu, fehlend, warnschwelle, verbrauch_pro_tag):
+    """Ergebnis ausgeben und bei knappem Bestand aufs Handy melden."""
+    frisch = frisch_vorher + neu
+    tage = frisch / verbrauch_pro_tag if verbrauch_pro_tag else 0
+    zeile = f"{kanal}: {neu} neu, {frisch} frisch (reicht ca. {tage:.0f} Tage)"
+    print(zeile)
+    if frisch < warnschwelle:
+        melde(f"{kanal}: Sammlung fast leer",
+              f"{zeile}. Nachfuellen hat {fehlend - neu} nicht geschafft - "
+              f"Workflow-Log pruefen (Gratis-Anbieter ueberlastet oder Schluessel fehlt).",
+              wichtig=True)
+
+
 def schreibe_modul(pfad, name, eintraege, kopf):
     """Neue Eintraege als Python-Modul ablegen (eine Liste, vollstaendig neu geschrieben)."""
     import pprint
