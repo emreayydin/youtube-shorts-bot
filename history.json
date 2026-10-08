@@ -1710,5 +1710,12 @@
     "kind": "short",
     "category": "Weltrekorde",
     "title": "Dieser Mann war 2,72 Meter groß"
+  },
+  {
+    "date": "2026-10-08 12:12",
+    "ts_utc": "2026-10-08T12:12:01.474281+00:00",
+    "kind": "short",
+    "category": "Wissenschaft",
+    "title": "Unter Wasser ist Schall viermal schneller"
   }
 ]
