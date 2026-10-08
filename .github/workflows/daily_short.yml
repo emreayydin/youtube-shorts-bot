@@ -37,6 +37,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Wartende Laeufe behalten sonst den alten Stand von history.json und
+          # nehmen denselben Fakt doppelt (Codex-Fund bei Muslim World, 08.10.).
+          ref: main
 
       - name: Install system dependencies
         run: |
