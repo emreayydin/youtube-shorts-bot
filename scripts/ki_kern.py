@@ -5,7 +5,7 @@ Gleiche Datei in youtube-shorts-bot, muslim-world-bot und versus.
 
 Anbieter, jeweils im kostenlosen Kontingent, mit automatischem Wechsel:
 - Groq    (GROQ_API_KEY)    - gpt-oss-120b u. a., 1.000 Anfragen/Tag, keine Karte
-- Mistral (MISTRAL_API_KEY) - monatliches Freiguthaben, stabiler Katalog
+- Mistral (MISTRAL_API_KEY) - optional; Emre nutzt es nicht (08.10.), ohne Schluessel uebersprungen
 - Gemini  (GEMINI_API_KEY)  - nur Flash; am 06.10. stark ueberlastet, daher zuletzt
 Fehlt ein Schluessel, wird der Anbieter uebersprungen. Schreiben und Pruefen
 laufen moeglichst bei verschiedenen Anbietern - zwei Modellfamilien sehen
@@ -74,7 +74,7 @@ def modelle(anbieter):
     gewaehlt = []
     if schluessel:
         try:
-            liste = [m["id"].split("/models/")[-1] if m["id"].startswith("models/") else m["id"]
+            liste = [m["id"].removeprefix("models/")
                      for m in _http(f"{info['url']}/models", schluessel).get("data", [])]
         except Exception as fehler:  # noqa: BLE001 - Anbieter gerade nicht erreichbar
             print(f"   {anbieter}: Modellliste nicht lesbar ({type(fehler).__name__})")
@@ -135,6 +135,8 @@ def frage(text, rolle="schreiben", temperatur=0.7, max_ausgabe=4000):
                         ANBIETER[anbieter]["ohne_denken"] = True
                         continue
                     print("  ", letzter)
+                    if fehler.code == 404:   # Modell abgeschaltet: fuer diesen Lauf streichen
+                        _katalog[anbieter] = [x for x in _katalog.get(anbieter, []) if x != modell]
                     break
                 except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as fehler:
                     letzter = f"{anbieter}/{modell}: {type(fehler).__name__}"
