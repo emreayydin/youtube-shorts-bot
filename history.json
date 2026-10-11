@@ -1836,5 +1836,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Du siehst die Sonne, wie sie vor 8 Minuten war"
+  },
+  {
+    "date": "2026-10-11 23:17",
+    "ts_utc": "2026-10-11T23:17:37.182405+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Astronauten sehen 16 Sonnenaufgänge am Tag"
   }
 ]
