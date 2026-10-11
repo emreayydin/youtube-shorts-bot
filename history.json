@@ -1822,5 +1822,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Auf Uranus dauert eine Nacht 42 Jahre"
+  },
+  {
+    "date": "2026-10-11 17:19",
+    "ts_utc": "2026-10-11T17:19:09.766613+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Auf Merkur dauert ein Tag zwei Jahre"
   }
 ]
