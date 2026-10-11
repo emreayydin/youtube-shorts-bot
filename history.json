@@ -1829,5 +1829,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Auf Merkur dauert ein Tag zwei Jahre"
+  },
+  {
+    "date": "2026-10-11 20:19",
+    "ts_utc": "2026-10-11T20:19:14.183101+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Du siehst die Sonne, wie sie vor 8 Minuten war"
   }
 ]
