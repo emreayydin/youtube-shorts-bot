@@ -93,9 +93,13 @@ def run(category: str = None, dry_run: bool = False, privacy: str = "public"):
     # and ranked deterministically before any narration is built).
     if content_mode == "finance":
         if channel["mode"] == "difference_money" or os.environ.get("VIDEO_FORMAT", "").strip().lower() == "comparison":
-            from finance_ranking import generate_comparison
+            from finance_ranking import KeineFrischenVergleiche, generate_comparison
             log.info("Lese historische Vergleichsdaten (read-only)...")
-            fact = generate_comparison()
+            try:
+                fact = generate_comparison()
+            except KeineFrischenVergleiche as e:
+                log.info(f"Slot ausgelassen: {e} - lieber kein Video als eine Wiederholung")
+                return None
             log.info(f"Comparison: {fact['title']}")
         else:
             from finance_ranking import generate_ranking

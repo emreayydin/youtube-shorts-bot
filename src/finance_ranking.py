@@ -298,6 +298,38 @@ def _least_recently_used(ordered: list[dict]) -> dict:
     return min(ordered, key=last_use)
 
 
+class KeineFrischenVergleiche(RuntimeError):
+    """Alle Vergleiche liefen innerhalb der Sperrfrist - lieber kein Video als eine Wiederholung."""
+
+
+SPERRFRIST_TAGE = int(os.environ.get("COMPARISON_PAUSE_DAYS", "60"))
+
+
+def _frische_szenarien(scenarios: list[dict]) -> list[dict]:
+    """Szenarien, deren Titel in den letzten SPERRFRIST_TAGE nicht hochgeladen wurde.
+
+    Bis 14.10.2026 gab es nur sechs Szenarien im Kreis: jedes lief 7-8-mal
+    ("$1,000 in eBay stock vs Cash"). YouTube wertet das als wiederholenden
+    Inhalt. Jetzt gilt eine Sperrfrist je Szenario.
+    """
+    try:
+        import history
+        eintraege = history._load()
+    except Exception:
+        return scenarios
+    grenze = datetime.now(timezone.utc).timestamp() - SPERRFRIST_TAGE * 86400
+    kuerzlich = []
+    for eintrag in eintraege:
+        try:
+            ts = datetime.fromisoformat(str(eintrag.get("ts_utc"))).timestamp()
+        except ValueError:
+            continue
+        if ts >= grenze:
+            kuerzlich.append(str(eintrag.get("title", "")).lower())
+    return [s for s in scenarios
+            if not any(_scenario_title_key(s) in t for t in kuerzlich)]
+
+
 def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
     """Select one comparison deterministically for a run.
 
@@ -330,6 +362,10 @@ def _select_comparison_config(config: dict) -> tuple[dict, str | None]:
     else:
         rotation_key = os.environ.get("COMPARISON_ROTATION_KEY", "").strip()
         if not rotation_key:
+            scenarios = _frische_szenarien(scenarios)
+            if not scenarios:
+                raise KeineFrischenVergleiche(
+                    f"alle Vergleiche liefen in den letzten {SPERRFRIST_TAGE} Tagen")
             now = datetime.now(timezone.utc)
             two_hour_window = (now.hour * 60 + now.minute) // 120
             rotation_index = (now.date().toordinal() + two_hour_window) % len(scenarios)
