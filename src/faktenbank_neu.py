@@ -41,4 +41,25 @@ NEU = [{'category': 'Astronomie',
                     'Astrological symbols and personality traits subtly merging in abstract light, '
                     'elegant concept art, no text',
                     'A close-up of a student thoughtfully reading a document under a desk lamp, '
-                    'cinematic, no text']}]
+                    'cinematic, no text']},
+ {'category': 'Astronomie',
+  'title': 'Uranus rollt seitlich um die Sonne',
+  'hook': 'Dieser Planet liegt beim Kreisen komplett auf der Seite.',
+  'body': 'Während die meisten Planeten wie ein Kreisel um die Sonne wandern, rollt Uranus '
+          'buchstäblich auf seiner Umlaufbahn. Seine Rotationsachse ist um rund 98 Grad gekippt. '
+          'Vermutlich kippte eine gewaltige Kollision mit einem Protoplaneten in der Frühzeit des '
+          'Sonnensystems den Eisriesen um. Diese extreme Schieflage sorgt für bizarre '
+          'Jahreszeiten. Ein Umlauf um die Sonne dauert 84 Erdjahre. Dadurch herrscht an jedem Pol '
+          'abwechselnd 42 Jahre lang ununterbrochen Tag und danach 42 Jahre lang völlige '
+          'Dunkelheit.',
+  'cta': 'Könntest du 42 Jahre Dauernacht aushalten?',
+  'tags': ['Uranus', 'Planeten', 'Sonnensystem', 'Weltall', 'Astronomie'],
+  'sources': ['NASA: Uranus In Depth', 'ESA: The tilted giant Uranus'],
+  'image_prompts': ['Realistic render of Uranus tilted on its side orbiting in space, rings '
+                    'visible, dark background, no text',
+                    'Diagram-style view of the solar system showing the unusual 98 degree tilt of '
+                    'planet Uranus, no text',
+                    'Close-up of the pale cyan atmosphere of Uranus with faint rings and distant '
+                    'sun, no text',
+                    'Artistic depiction of a giant protoplanet colliding with the early planet '
+                    'Uranus in deep space, no text']}]
