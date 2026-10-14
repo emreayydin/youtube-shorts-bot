@@ -1871,5 +1871,12 @@
     "kind": "short",
     "category": "Biologie",
     "title": "Eine Giraffe hat so viele Halswirbel wie du"
+  },
+  {
+    "date": "2026-10-14 13:10",
+    "ts_utc": "2026-10-14T13:10:04.933809+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Uranus rollt seitlich um die Sonne"
   }
 ]
