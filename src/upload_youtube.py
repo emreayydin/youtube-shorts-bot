@@ -58,8 +58,7 @@ def get_youtube_service(scopes: list[str] | None = None):
         with open(TOKEN_FILE, "w") as f:
             f.write(creds.to_json())
         print(f"Token gespeichert: {TOKEN_FILE}")
-        print("\nFüge diesen JSON-Inhalt als GitHub Secret 'YOUTUBE_TOKEN_JSON' hinzu:")
-        print(creds.to_json())
+        print("Das Token wird nicht im Terminal ausgegeben. Für GitHub muss der Account-Inhaber es selbst als Secret hinterlegen.")
 
     return build("youtube", "v3", credentials=creds)
 

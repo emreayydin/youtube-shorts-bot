@@ -36,6 +36,7 @@ CATEGORY_COLORS = {
     "Psychologie":   ((26, 13, 43),   (107, 26, 139)),
     "Astronomie":    ((0, 0, 20),     (13, 13, 75)),
     "Biologie":      ((10, 43, 26),   (26, 107, 75)),
+    "Finance":       ((7, 22, 31),    (14, 92, 92)),
 }
 DEFAULT_COLORS = ((13, 13, 13), (26, 26, 46))
 
@@ -113,6 +114,29 @@ def _gradient_png(top_rgb, bottom_rgb, path):
     mask.putdata([int(255 * (y / VIDEO_HEIGHT)) for y in range(VIDEO_HEIGHT) for _ in range(VIDEO_WIDTH)])
     base.paste(top, (0, 0), mask)
     base.save(path)
+    return path
+
+
+def _finance_png(path: str) -> str:
+    """Create a neutral finance-themed backdrop without implying real prices."""
+    img = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT), (5, 16, 28))
+    d = ImageDraw.Draw(img, "RGB")
+    # Subtle grid and decorative candles keep finance rankings from using
+    # unrelated stock footage. These bars are intentionally not market data.
+    for x in range(0, VIDEO_WIDTH, 120):
+        d.line((x, 0, x, VIDEO_HEIGHT), fill=(14, 48, 66), width=2)
+    for y in range(120, VIDEO_HEIGHT, 150):
+        d.line((0, y, VIDEO_WIDTH, y), fill=(14, 48, 66), width=2)
+    base = VIDEO_HEIGHT * 0.64
+    for i in range(22):
+        x = 30 + i * 50
+        height = 90 + ((i * 71) % 310)
+        top = base - height
+        color = (54, 211, 153) if i % 4 else (248, 113, 113)
+        d.line((x + 13, top - 45, x + 13, base + 70), fill=color, width=3)
+        d.rectangle((x, top, x + 26, top + 78), outline=color, width=4)
+    d.line((0, base + 70, VIDEO_WIDTH, base - 260), fill=(56, 189, 248), width=5)
+    img.save(path)
     return path
 
 
@@ -286,7 +310,11 @@ def render_video(fact: dict, audio_path: str, output_path: str,
         except Exception as e:
             print(f"KI-Hintergrund fehlgeschlagen ({e}) — nutze Pexels.")
 
-    clips = [] if ai_bg else ([background_video] if background_video else
+    # Finance rankings use an in-house chart backdrop. Generic stock footage
+    # (for example food or travel clips returned for broad search terms) makes
+    # a market ranking look misleading and weakens the channel promise.
+    clips = [] if ai_bg or fact.get("category") == "Finance" else (
+        [background_video] if background_video else
         fetch_background_clips(fact.get("category", ""), str(work / "clips"),
                                count=6, tags=fact.get("tags")))
 
@@ -300,7 +328,9 @@ def render_video(fact: dict, audio_path: str, output_path: str,
         bg_filter = f"[0:v]setsar=1[bg]"
     else:
         top, bottom = CATEGORY_COLORS.get(fact.get("category", ""), DEFAULT_COLORS)
-        grad = _gradient_png(top, bottom, str(work / "grad.png"))
+        grad = (_finance_png(str(work / "finance.png"))
+                if fact.get("category") == "Finance"
+                else _gradient_png(top, bottom, str(work / "grad.png")))
         bg_input = ["-loop", "1"] + t_arg + ["-i", grad]
         bg_filter = (
             f"[0:v]scale={int(VIDEO_WIDTH*1.2)}:{int(VIDEO_HEIGHT*1.2)},"

@@ -66,8 +66,12 @@ def _axis_font(size: int = 18) -> ImageFont.FreeTypeFont:
     return _font(size, bold=True)
 
 
-def _money(value: float) -> str:
+def _money(value: float, language: str = "en") -> str:
     value = float(value)
+    if language.lower().startswith("de"):
+        if abs(value) >= 1_000_000:
+            return f"{value / 1_000_000:.1f}".replace(".", ",") + " Mio. $"
+        return f"{value:,.0f}".replace(",", ".") + " $"
     if abs(value) >= 1_000_000:
         return f"${value / 1_000_000:.1f}M"
     if abs(value) >= 100_000:
@@ -84,6 +88,65 @@ def _center_segments(draw: ImageDraw.ImageDraw, y: int, segments: list[tuple[str
         draw.text((x, y), text, font=font, fill=colour)
         x += width
     return int(y + size * 1.15)
+
+
+def _center_wrapped_text(
+    draw: ImageDraw.ImageDraw,
+    y: int,
+    text: str,
+    size: int,
+    colour: tuple[int, int, int],
+    bold: bool = False,
+    max_width: int = 960,
+) -> int:
+    """Draw centered word-wrapped copy inside the vertical safe area."""
+    font = _font(size, bold)
+    lines: list[str] = []
+    current: list[str] = []
+    for word in str(text).split():
+        candidate = " ".join([*current, word])
+        if current and draw.textlength(candidate, font=font) > max_width:
+            lines.append(" ".join(current))
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        lines.append(" ".join(current))
+    for line in lines:
+        width = draw.textlength(line, font=font)
+        draw.text(((VIDEO_WIDTH - width) / 2, y), line, font=font, fill=colour)
+        y += int(size * 1.15)
+    return y
+
+
+def _draw_wrapped_text(
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    text: str,
+    size: int,
+    colour: tuple[int, int, int],
+    max_width: int = 976,
+    bold: bool = False,
+) -> int:
+    """Draw left-aligned copy without letting long German lines overflow."""
+    font = _font(size, bold)
+    lines: list[str] = []
+    current: list[str] = []
+    for word in str(text).split():
+        candidate = " ".join([*current, word])
+        if current and draw.textlength(candidate, font=font) > max_width:
+            lines.append(" ".join(current))
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        lines.append(" ".join(current))
+    line_height = int(size * 1.3)
+    for line in lines:
+        draw.text((x, y), line, font=font, fill=colour)
+        y += line_height
+    return y
 
 
 def _draw_money_bag(draw: ImageDraw.ImageDraw, x: int, y: int, scale: float = 1.0) -> None:
@@ -252,6 +315,8 @@ def _draw_time_axis(draw: ImageDraw.ImageDraw, series: list[dict], progress: flo
 
 def _frame(fact: dict, progress: float) -> Image.Image:
     comparison = fact["comparison"]
+    language = str(fact.get("language") or "en").lower()
+    german = language.startswith("de")
     full_series = comparison["series"]
     series = _downsample(full_series)
     initial = float(comparison["initialAmount"])
@@ -264,9 +329,22 @@ def _frame(fact: dict, progress: float) -> Image.Image:
 
     # Headline: same visual grammar as the reference, with original copy.
     y = 74
-    y = _center_segments(draw, y, [("If Someone invested ", BLACK, False), (_money(initial), GREEN, True)], 72)
-    y = _center_segments(draw, y + 4, [("in ", BLACK, False), (comparison["assetLabel"], BLUE, True), (" instead of", BLACK, False)], 72)
-    _center_segments(draw, y + 4, [("", BLACK, False), (comparison.get("alternativePhrase", "keeping cash"), BLACK, True)], 72)
+    headline_size = 58 if german else 72
+    if german:
+        y = _center_segments(draw, y, [("Wenn du ", BLACK, False), (_money(initial, language), GREEN, True)], headline_size)
+        y = _center_segments(draw, y + 4, [("in ", BLACK, False), (comparison["assetLabel"], BLUE, True)], headline_size)
+        _center_wrapped_text(
+            draw,
+            y + 4,
+            f"statt {comparison.get('alternativePhrase', 'Bargeld zu behalten')}",
+            headline_size,
+            BLACK,
+            bold=True,
+        )
+    else:
+        y = _center_segments(draw, y, [("If Someone invested ", BLACK, False), (_money(initial, language), GREEN, True)], headline_size)
+        y = _center_segments(draw, y + 4, [("in ", BLACK, False), (comparison["assetLabel"], BLUE, True), (" instead of", BLACK, False)], headline_size)
+        _center_segments(draw, y + 4, [("", BLACK, False), (comparison.get("alternativePhrase", "keeping cash"), BLACK, True)], headline_size)
 
     _draw_money_bag(draw, 105, 384, 1.05)
     _draw_mini_chart(draw, 404, 405, 1.25)
@@ -292,7 +370,7 @@ def _frame(fact: dict, progress: float) -> Image.Image:
         value = y_max * tick / 5
         yy = bottom - (value / y_max) * chart_height
         draw.line((left, yy, right, yy), fill=GRID, width=2)
-        label = _money(value)
+        label = _money(value, language)
         draw.text((left - 18, yy), label, font=_font(24, bold=True), fill=BLACK, anchor="ra")
     draw.line((left, top, left, bottom), fill=BLACK, width=6)
     draw.line((left, bottom, right, bottom), fill=BLACK, width=6)
@@ -323,7 +401,7 @@ def _frame(fact: dict, progress: float) -> Image.Image:
         # reference videos and stays above the x-axis.
         reference_label_y = min(bottom - 40, reference_y + 90)
     draw.rounded_rectangle((right - 218, reference_label_y - 37, right - 10, reference_label_y + 37), radius=16, fill=LIGHT_GREEN)
-    draw.text((right - 114, reference_label_y), f"{reference_label}\n{_money(initial)}", font=_font(25, bold=True), fill=GREEN, anchor="mm", align="center")
+    draw.text((right - 114, reference_label_y), f"{reference_label}\n{_money(initial, language)}", font=_font(25, bold=True), fill=GREEN, anchor="mm", align="center")
 
     # Reveal the adjusted-price series over the whole video.
     line = [xy(i, values[i]) for i in range(whole + 1)]
@@ -334,24 +412,44 @@ def _frame(fact: dict, progress: float) -> Image.Image:
     end_x, end_y = line[-1]
     draw.ellipse((end_x - 9, end_y - 9, end_x + 9, end_y + 9), fill=BLUE)
     label_value = current_value
-    label_x = min(max(left + 12, end_x + 14), right - 180)
+    # Right-align the blue endpoint label just left of the green reference
+    # badge. This keeps both values legible when the two lines finish close
+    # together, which is common in purchase-vs-investment comparisons.
+    label_x = plot_right - 18
+    label_y = max(top + 14, end_y - 100)
     chart_label = comparison.get("chartLabel", comparison["assetLabel"])
-    draw.text((label_x, max(top + 14, end_y - 24)), f"{chart_label}\n{_money(label_value)}", font=_font(28, bold=True), fill=BLUE)
+    draw.text(
+        (label_x, label_y),
+        f"{chart_label}\n{_money(label_value, language)}",
+        font=_font(28, bold=True),
+        fill=BLUE,
+        anchor="ra",
+        align="right",
+    )
 
     # The time axis moves with the data instead of showing three static years.
     # This keeps each annual change synchronized with the moving line.
     start_year, end_year = _draw_time_axis(draw, full_series, progress, left, right, bottom, plot_right=plot_right)
 
     source = comparison.get("asOf", "")[:10]
-    draw.text((52, 1698), f"Historical comparison • {start_year}–{end_year} • data through {source}", font=_font(24), fill=MUTED)
+    footer_source_y = 1668
+    if german:
+        draw.text((52, footer_source_y), f"Historischer Vergleich • {start_year}–{end_year} • Daten bis {source}", font=_font(24), fill=MUTED)
+    else:
+        draw.text((52, footer_source_y), f"Historical comparison • {start_year}–{end_year} • data through {source}", font=_font(24), fill=MUTED)
     reference_note = comparison.get("referenceNote", "")
     if reference_note:
-        draw.text((52, 1738), reference_note, font=_font(20), fill=MUTED)
-        disclaimer_y = 1772
+        disclaimer_y = _draw_wrapped_text(draw, 52, 1706, reference_note, 20, MUTED) + 4
     else:
-        disclaimer_y = 1742
-    draw.text((52, disclaimer_y), "Educational illustration — not financial advice. Past performance is not a guarantee.", font=_font(22), fill=MUTED)
-    draw.text((52, 1808), "THE DIFFERENCE MONEY", font=_font(30, bold=True), fill=BLUE)
+        disclaimer_y = 1706
+    disclaimer = (
+        "Bildungsinhalt — keine Finanzberatung. Vergangene Wertentwicklung ist keine Garantie."
+        if german
+        else "Educational illustration — not financial advice. Past performance is not a guarantee."
+    )
+    draw.text((52, disclaimer_y), disclaimer, font=_font(22), fill=MUTED)
+    brand_label = str(fact.get("brand_label") or "THE DIFFERENCE MONEY")
+    draw.text((52, 1808), brand_label, font=_font(30, bold=True), fill=BLUE)
     return image
 
 
