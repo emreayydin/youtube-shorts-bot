@@ -77,6 +77,13 @@ def _probe_duration(path: str) -> float:
         return 0.0
 
 
+def _audio_encode_args(fact: dict) -> list[str]:
+    """Master narration consistently; do not alter the shared Finance path."""
+    if fact.get("category") == "Finance":
+        return []
+    return ["-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "48000"]
+
+
 # ---------- caption grouping ----------
 
 def _group_captions(words: list[dict], max_words: int = 3, total: float = None) -> list[dict]:
@@ -304,7 +311,10 @@ def render_video(fact: dict, audio_path: str, output_path: str,
 
     # ----- background: AI images (preferred) -> Pexels montage -> gradient -----
     ai_bg = None
-    if ai_images and any(ai_images):
+    if fact.get("motion_graphic") == "orbital-visibility":
+        from fact_motion import render_orbital_visibility
+        ai_bg = render_orbital_visibility(total, str(work / "original-motion.mp4"), _find_font)
+    elif ai_images and any(ai_images):
         try:
             ai_bg = _build_timed_bg(ai_images, total, work, str(work / "aibg.mp4"))
         except Exception as e:
@@ -344,11 +354,21 @@ def render_video(fact: dict, audio_path: str, output_path: str,
     if not captions:
         captions = [{"text": "", "start": 0.0, "end": total}]
 
-    # Render one full-frame overlay PNG per caption window
+    # Trivia uses exact spoken-word emphasis with stable phrase windows.
+    # Leave Finance's independent visual contract untouched.
+    editorial = bool(words) and fact.get("category") != "Finance"
+    if editorial:
+        from editorial_captions import caption_events, editorial_frame
+        events = caption_events(words, total)
+    else:
+        events = captions
+
+    # Render one full-frame overlay PNG per timed event.
     frames = []
-    for i, c in enumerate(captions):
-        p = _overlay_frame(fact, c["text"], str(work / f"ov_{i}.png"))
-        dur = max(0.1, c["end"] - c["start"])
+    for i, c in enumerate(events):
+        p = (editorial_frame(fact, c, str(work / f"ov_{i}.png"), _find_font, _wrap)
+             if editorial else _overlay_frame(fact, c["text"], str(work / f"ov_{i}.png")))
+        dur = max(1 / 30, c["end"] - c["start"])
         frames.append((p, dur))
 
     # concat-demuxer list (last entry repeated so its duration applies)
@@ -374,9 +394,10 @@ def render_video(fact: dict, audio_path: str, output_path: str,
     cmd += [
         "-filter_complex", filter_complex,
         "-map", "[v]", "-map", "2:a",
+        *_audio_encode_args(fact),
         "-c:v", "libx264", "-preset", "fast", "-crf", "23",
         "-c:a", "aac", "-b:a", "192k",
-        "-pix_fmt", "yuv420p", "-r", "30",
+        "-pix_fmt", "yuv420p", "-r", "30", "-movflags", "+faststart",
         "-t", f"{total:.2f}", "-shortest",
         output_path,
     ]
