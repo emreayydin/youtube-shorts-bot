@@ -1920,5 +1920,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Jupiter dreht sich in weniger als zehn Stunden"
+  },
+  {
+    "date": "2026-10-15 20:28",
+    "ts_utc": "2026-10-15T20:28:31.008058+00:00",
+    "kind": "short",
+    "category": "Astronomie",
+    "title": "Auf dem Mars kann der Sonnenuntergang blau wirken"
   }
 ]
