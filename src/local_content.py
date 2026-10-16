@@ -135,6 +135,7 @@ FACTS = [
 # Die grosse, gepruefte Sammlung (seit 01.10.2026, wird woechentlich vom
 # Kanal-Agenten ergaenzt). Doppelte Titel zaehlen nur einmal.
 from faktenbank import FAKTENBANK  # noqa: E402
+from faktenbank_monat import MONAT  # noqa: E402  (Monatsvorrat ab 16.10.2026)
 
 try:  # von Gemini montags nachgefuellt (scripts/faktenbank_nachfuellen.py)
     from faktenbank_neu import NEU as _NEU  # noqa: E402
@@ -142,7 +143,7 @@ except ImportError:
     _NEU = []
 
 _bekannt = {x["title"].lower() for x in FACTS}
-for _x in FAKTENBANK + _NEU:
+for _x in FAKTENBANK + MONAT + _NEU:
     if _x["title"].lower() not in _bekannt:
         FACTS.append(_x)
         _bekannt.add(_x["title"].lower())
