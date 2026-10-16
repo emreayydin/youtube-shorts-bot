@@ -1,25 +1,85 @@
 {
   "stockWatchlist": [
-    {"symbol": "AAPL", "name": "Apple"},
-    {"symbol": "MSFT", "name": "Microsoft"},
-    {"symbol": "NVDA", "name": "NVIDIA"},
-    {"symbol": "AMZN", "name": "Amazon"},
-    {"symbol": "GOOGL", "name": "Alphabet"},
-    {"symbol": "META", "name": "Meta"},
-    {"symbol": "TSLA", "name": "Tesla"},
-    {"symbol": "AVGO", "name": "Broadcom"},
-    {"symbol": "AMD", "name": "AMD"},
-    {"symbol": "NFLX", "name": "Netflix"},
-    {"symbol": "JPM", "name": "JPMorgan Chase"},
-    {"symbol": "V", "name": "Visa"},
-    {"symbol": "MA", "name": "Mastercard"},
-    {"symbol": "LLY", "name": "Eli Lilly"},
-    {"symbol": "COST", "name": "Costco"},
-    {"symbol": "ORCL", "name": "Oracle"},
-    {"symbol": "CRM", "name": "Salesforce"},
-    {"symbol": "ADBE", "name": "Adobe"},
-    {"symbol": "KO", "name": "Coca-Cola"},
-    {"symbol": "WMT", "name": "Walmart"}
+    {
+      "symbol": "AAPL",
+      "name": "Apple"
+    },
+    {
+      "symbol": "MSFT",
+      "name": "Microsoft"
+    },
+    {
+      "symbol": "NVDA",
+      "name": "NVIDIA"
+    },
+    {
+      "symbol": "AMZN",
+      "name": "Amazon"
+    },
+    {
+      "symbol": "GOOGL",
+      "name": "Alphabet"
+    },
+    {
+      "symbol": "META",
+      "name": "Meta"
+    },
+    {
+      "symbol": "TSLA",
+      "name": "Tesla"
+    },
+    {
+      "symbol": "AVGO",
+      "name": "Broadcom"
+    },
+    {
+      "symbol": "AMD",
+      "name": "AMD"
+    },
+    {
+      "symbol": "NFLX",
+      "name": "Netflix"
+    },
+    {
+      "symbol": "JPM",
+      "name": "JPMorgan Chase"
+    },
+    {
+      "symbol": "V",
+      "name": "Visa"
+    },
+    {
+      "symbol": "MA",
+      "name": "Mastercard"
+    },
+    {
+      "symbol": "LLY",
+      "name": "Eli Lilly"
+    },
+    {
+      "symbol": "COST",
+      "name": "Costco"
+    },
+    {
+      "symbol": "ORCL",
+      "name": "Oracle"
+    },
+    {
+      "symbol": "CRM",
+      "name": "Salesforce"
+    },
+    {
+      "symbol": "ADBE",
+      "name": "Adobe"
+    },
+    {
+      "symbol": "KO",
+      "name": "Coca-Cola"
+    },
+    {
+      "symbol": "WMT",
+      "name": "Walmart"
+    }
   ],
   "crypto": {
     "marketCapUniverse": 50,
@@ -53,7 +113,10 @@
     {
       "id": "mercedes-car",
       "symbol": "MBG.DE",
-      "fallbackSymbols": ["MBGAF", "MBGYY"],
+      "fallbackSymbols": [
+        "MBGAF",
+        "MBGYY"
+      ],
       "assetLabel": "Mercedes stock",
       "chartLabel": "Mercedes-Benz",
       "initialAmount": 50000,
@@ -109,6 +172,438 @@
       "alternativeLabel": "Transfer fee",
       "alternativePhrase": "paying a $53 million transfer fee in 2020",
       "alternativeIcon": "football",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "apple-first-iphone",
+      "symbol": "AAPL",
+      "assetLabel": "Apple stock",
+      "chartLabel": "Apple",
+      "initialAmount": 499,
+      "lookbackYears": 19,
+      "alternativeLabel": "iPhone",
+      "alternativePhrase": "buying the first iPhone in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "nvidia-gpu",
+      "symbol": "NVDA",
+      "assetLabel": "Nvidia stock",
+      "chartLabel": "Nvidia",
+      "initialAmount": 599,
+      "lookbackYears": 10,
+      "alternativeLabel": "Graphics card",
+      "alternativePhrase": "buying a graphics card in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "sony-playstation",
+      "symbol": "SONY",
+      "assetLabel": "Sony stock",
+      "chartLabel": "Sony",
+      "initialAmount": 399,
+      "lookbackYears": 13,
+      "alternativeLabel": "PlayStation",
+      "alternativePhrase": "buying a PlayStation 4 in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "nintendo-switch",
+      "symbol": "NTDOY",
+      "assetLabel": "Nintendo stock",
+      "chartLabel": "Nintendo",
+      "initialAmount": 299,
+      "lookbackYears": 9,
+      "alternativeLabel": "Switch",
+      "alternativePhrase": "buying a Nintendo Switch in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "microsoft-xbox",
+      "symbol": "MSFT",
+      "assetLabel": "Microsoft stock",
+      "chartLabel": "Microsoft",
+      "initialAmount": 499,
+      "lookbackYears": 13,
+      "alternativeLabel": "Xbox",
+      "alternativePhrase": "buying an Xbox One in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "nike-sneakers",
+      "symbol": "NKE",
+      "assetLabel": "Nike stock",
+      "chartLabel": "Nike",
+      "initialAmount": 200,
+      "lookbackYears": 10,
+      "alternativeLabel": "Sneakers",
+      "alternativePhrase": "buying $200 sneakers in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "starbucks-coffee",
+      "symbol": "SBUX",
+      "assetLabel": "Starbucks stock",
+      "chartLabel": "Starbucks",
+      "initialAmount": 1825,
+      "lookbackYears": 10,
+      "alternativeLabel": "Coffee",
+      "alternativePhrase": "spending $5 a day on coffee in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "netflix-subscription",
+      "symbol": "NFLX",
+      "assetLabel": "Netflix stock",
+      "chartLabel": "Netflix",
+      "initialAmount": 120,
+      "lookbackYears": 10,
+      "alternativeLabel": "Netflix plan",
+      "alternativePhrase": "paying for a year of Netflix in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "amazon-prime",
+      "symbol": "AMZN",
+      "assetLabel": "Amazon stock",
+      "chartLabel": "Amazon",
+      "initialAmount": 99,
+      "lookbackYears": 12,
+      "alternativeLabel": "Prime",
+      "alternativePhrase": "paying for Amazon Prime in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "costco-membership",
+      "symbol": "COST",
+      "assetLabel": "Costco stock",
+      "chartLabel": "Costco",
+      "initialAmount": 55,
+      "lookbackYears": 10,
+      "alternativeLabel": "Membership",
+      "alternativePhrase": "paying for a Costco membership in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "mcdonalds-fastfood",
+      "symbol": "MCD",
+      "assetLabel": "McDonald's stock",
+      "chartLabel": "McDonald's",
+      "initialAmount": 1000,
+      "lookbackYears": 10,
+      "alternativeLabel": "Fast food",
+      "alternativePhrase": "spending $1,000 on fast food in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "disney-ticket",
+      "symbol": "DIS",
+      "assetLabel": "Disney stock",
+      "chartLabel": "Disney",
+      "initialAmount": 99,
+      "lookbackYears": 10,
+      "alternativeLabel": "Disneyland",
+      "alternativePhrase": "buying a Disneyland ticket in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "bitcoin-iphone",
+      "symbol": "BTC-USD",
+      "assetLabel": "Bitcoin",
+      "chartLabel": "Bitcoin",
+      "initialAmount": 649,
+      "lookbackYears": 10,
+      "alternativeLabel": "iPhone 7",
+      "alternativePhrase": "buying an iPhone 7 in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "ethereum-cash",
+      "symbol": "ETH-USD",
+      "assetLabel": "Ethereum",
+      "chartLabel": "Ethereum",
+      "initialAmount": 1000,
+      "lookbackYears": 8,
+      "alternativeLabel": "Cash",
+      "alternativePhrase": "keeping $1,000 in cash in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "cash"
+    },
+    {
+      "id": "google-pixel",
+      "symbol": "GOOGL",
+      "assetLabel": "Google stock",
+      "chartLabel": "Alphabet",
+      "initialAmount": 649,
+      "lookbackYears": 10,
+      "alternativeLabel": "Pixel phone",
+      "alternativePhrase": "buying a Google Pixel in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "meta-vr",
+      "symbol": "META",
+      "assetLabel": "Meta stock",
+      "chartLabel": "Meta",
+      "initialAmount": 599,
+      "lookbackYears": 10,
+      "alternativeLabel": "VR headset",
+      "alternativePhrase": "buying an Oculus Rift in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "ferrari-car",
+      "symbol": "RACE",
+      "assetLabel": "Ferrari stock",
+      "chartLabel": "Ferrari",
+      "initialAmount": 250000,
+      "lookbackYears": 10,
+      "alternativeLabel": "Ferrari",
+      "alternativePhrase": "buying a Ferrari in {start_year}",
+      "alternativeIcon": "car",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "ford-truck",
+      "symbol": "F",
+      "assetLabel": "Ford stock",
+      "chartLabel": "Ford",
+      "initialAmount": 27000,
+      "lookbackYears": 10,
+      "alternativeLabel": "F-150",
+      "alternativePhrase": "buying a Ford F-150 in {start_year}",
+      "alternativeIcon": "car",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "toyota-camry",
+      "symbol": "TM",
+      "assetLabel": "Toyota stock",
+      "chartLabel": "Toyota",
+      "initialAmount": 23000,
+      "lookbackYears": 10,
+      "alternativeLabel": "Camry",
+      "alternativePhrase": "buying a Toyota Camry in {start_year}",
+      "alternativeIcon": "car",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "tesla-model3",
+      "symbol": "TSLA",
+      "assetLabel": "Tesla stock",
+      "chartLabel": "Tesla",
+      "initialAmount": 49000,
+      "lookbackYears": 8,
+      "alternativeLabel": "Model 3",
+      "alternativePhrase": "buying a Model 3 in {start_year}",
+      "alternativeIcon": "car",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "sp500-house",
+      "symbol": "SPY",
+      "assetLabel": "an S&P 500 ETF",
+      "chartLabel": "S&P 500",
+      "initialAmount": 200000,
+      "lookbackYears": 18,
+      "alternativeLabel": "House",
+      "alternativePhrase": "buying a house in {start_year}",
+      "alternativeIcon": "house",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "nasdaq-house",
+      "symbol": "QQQ",
+      "assetLabel": "a Nasdaq ETF",
+      "chartLabel": "Nasdaq 100",
+      "initialAmount": 220000,
+      "lookbackYears": 16,
+      "alternativeLabel": "Home",
+      "alternativePhrase": "buying a home in {start_year}",
+      "alternativeIcon": "house",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "gold-cash",
+      "symbol": "GLD",
+      "assetLabel": "gold",
+      "chartLabel": "Gold",
+      "initialAmount": 10000,
+      "lookbackYears": 20,
+      "alternativeLabel": "Savings",
+      "alternativePhrase": "keeping $10,000 in savings in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "cash"
+    },
+    {
+      "id": "microsoft-surface",
+      "symbol": "MSFT",
+      "assetLabel": "Microsoft stock",
+      "chartLabel": "Microsoft",
+      "initialAmount": 499,
+      "lookbackYears": 14,
+      "alternativeLabel": "Surface",
+      "alternativePhrase": "buying a Surface tablet in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "lululemon-leggings",
+      "symbol": "LULU",
+      "assetLabel": "Lululemon stock",
+      "chartLabel": "Lululemon",
+      "initialAmount": 98,
+      "lookbackYears": 10,
+      "alternativeLabel": "Leggings",
+      "alternativePhrase": "buying $98 leggings in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "chipotle-burritos",
+      "symbol": "CMG",
+      "assetLabel": "Chipotle stock",
+      "chartLabel": "Chipotle",
+      "initialAmount": 1000,
+      "lookbackYears": 10,
+      "alternativeLabel": "Burritos",
+      "alternativePhrase": "spending $1,000 on burritos in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "cocacola-soda",
+      "symbol": "KO",
+      "assetLabel": "Coca-Cola stock",
+      "chartLabel": "Coca-Cola",
+      "initialAmount": 500,
+      "lookbackYears": 20,
+      "alternativeLabel": "Soda",
+      "alternativePhrase": "spending $500 on soda in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "peloton-bike",
+      "symbol": "PTON",
+      "assetLabel": "Peloton stock",
+      "chartLabel": "Peloton",
+      "initialAmount": 2245,
+      "lookbackYears": 6,
+      "alternativeLabel": "Peloton bike",
+      "alternativePhrase": "buying a Peloton bike in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "gamestop-games",
+      "symbol": "GME",
+      "assetLabel": "GameStop stock",
+      "chartLabel": "GameStop",
+      "initialAmount": 60,
+      "lookbackYears": 10,
+      "alternativeLabel": "Video game",
+      "alternativePhrase": "buying a new video game in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "spotify-premium",
+      "symbol": "SPOT",
+      "assetLabel": "Spotify stock",
+      "chartLabel": "Spotify",
+      "initialAmount": 120,
+      "lookbackYears": 8,
+      "alternativeLabel": "Spotify plan",
+      "alternativePhrase": "paying for a year of Spotify in {start_year}",
+      "alternativeIcon": "earbuds",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "uber-rides",
+      "symbol": "UBER",
+      "assetLabel": "Uber stock",
+      "chartLabel": "Uber",
+      "initialAmount": 1000,
+      "lookbackYears": 7,
+      "alternativeLabel": "Uber rides",
+      "alternativePhrase": "spending $1,000 on Uber rides in {start_year}",
+      "alternativeIcon": "car",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "airbnb-vacation",
+      "symbol": "ABNB",
+      "assetLabel": "Airbnb stock",
+      "chartLabel": "Airbnb",
+      "initialAmount": 2000,
+      "lookbackYears": 5,
+      "alternativeLabel": "Vacation",
+      "alternativePhrase": "booking a $2,000 vacation in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "bitcoin-neymar",
+      "symbol": "BTC-USD",
+      "assetLabel": "Bitcoin",
+      "chartLabel": "Bitcoin",
+      "initialAmount": 263000000,
+      "lookbackYears": 9,
+      "alternativeLabel": "Neymar transfer",
+      "alternativePhrase": "paying Neymar's $263 million transfer in {start_year}",
+      "alternativeIcon": "football",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "sp500-tuition",
+      "symbol": "SPY",
+      "assetLabel": "an S&P 500 ETF",
+      "chartLabel": "S&P 500",
+      "initialAmount": 10000,
+      "lookbackYears": 10,
+      "alternativeLabel": "Tuition",
+      "alternativePhrase": "paying $10,000 college tuition in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "sp500-wedding",
+      "symbol": "SPY",
+      "assetLabel": "an S&P 500 ETF",
+      "chartLabel": "S&P 500",
+      "initialAmount": 30000,
+      "lookbackYears": 10,
+      "alternativeLabel": "Wedding",
+      "alternativePhrase": "spending $30,000 on a wedding in {start_year}",
+      "alternativeIcon": "wallet",
+      "referenceMode": "purchase"
+    },
+    {
+      "id": "beats-headphones",
+      "symbol": "AAPL",
+      "assetLabel": "Apple stock",
+      "chartLabel": "Apple",
+      "initialAmount": 299,
+      "lookbackYears": 12,
+      "alternativeLabel": "Beats",
+      "alternativePhrase": "buying Beats headphones in {start_year}",
+      "alternativeIcon": "earbuds",
       "referenceMode": "purchase"
     }
   ]
