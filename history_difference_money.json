@@ -376,5 +376,12 @@
     "kind": "short",
     "category": "Finance",
     "title": "$1,000 in Chipotle stock vs Burritos: 2016–2026"
+  },
+  {
+    "date": "2026-10-19 09:20",
+    "ts_utc": "2026-10-19T09:20:03.456466+00:00",
+    "kind": "short",
+    "category": "Finance",
+    "title": "$100 in Netflix stock vs DVDs: 2012–2026"
   }
 ]
