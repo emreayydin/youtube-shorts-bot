@@ -425,5 +425,12 @@
     "kind": "short",
     "category": "Finance",
     "title": "$27,000 in Ford stock vs F-150: 2016–2026"
+  },
+  {
+    "date": "2026-10-21 12:34",
+    "ts_utc": "2026-10-21T12:34:09.979083+00:00",
+    "kind": "short",
+    "category": "Finance",
+    "title": "$1,299 in Apple stock vs MacBook: 2015–2026"
   }
 ]
