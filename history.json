@@ -2067,5 +2067,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "In diesem Sturm hätte die Erde Platz"
+  },
+  {
+    "date": "2026-10-22 17:10",
+    "ts_utc": "2026-10-22T17:10:15.022581+00:00",
+    "kind": "short",
+    "category": "Geschichte",
+    "title": "Der Diebstahl, der die Mona Lisa berühmt machte"
   }
 ]
