@@ -2263,5 +2263,12 @@
     "kind": "short",
     "category": "Astronomie",
     "title": "Dieser Mond wird von seinem Planeten zerrissen"
+  },
+  {
+    "date": "2026-11-01 12:23",
+    "ts_utc": "2026-11-01T12:23:31.570913+00:00",
+    "kind": "short",
+    "category": "Natur",
+    "title": "Kühe haben beste Freundinnen"
   }
 ]
