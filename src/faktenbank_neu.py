@@ -62,4 +62,24 @@ NEU = [{'category': 'Astronomie',
                     'Close-up of the pale cyan atmosphere of Uranus with faint rings and distant '
                     'sun, no text',
                     'Artistic depiction of a giant protoplanet colliding with the early planet '
-                    'Uranus in deep space, no text']}]
+                    'Uranus in deep space, no text']},
+ {'category': 'Psychologie',
+  'title': 'Deine Augen können dein Gehör austricksen',
+  'hook': 'Was du siehst, verändert direkt, was du hörst.',
+  'body': 'Im Jahr 1976 entdeckten die Forscher Harry McGurk und John MacDonald eine faszinierende '
+          'Täuschung. Spielt man einem Menschen den Ton einer Stimme vor, die Ba-ba sagt, zeigt '
+          'dazu aber ein Video von Lippen, die Ga-ga formen, passiert etwas Verblüffendes. Das '
+          'Gehirn verschmilzt beide Signale zu einem völlig neuen Laut: Der Hörer nimmt ganz '
+          'deutlich Da-da wahr. Selbst wenn man den Trick kennt, lässt sich die optische Täuschung '
+          'des Gehörs kaum ausschalten.',
+  'cta': 'Vertraust du deinen Augen oder deinen Ohren mehr?',
+  'tags': ['Psychologie', 'McGurk-Effekt', 'Wahrnehmung', 'Gehirn', 'Sinne'],
+  'sources': ['Nature: Hearing lips and seeing voices (1976)'],
+  'image_prompts': ['Extreme close-up of human lips pronouncing a syllable in a brightly lit '
+                    'studio, no text',
+                    'Illustration of an acoustic sound wave colliding with visual light rays '
+                    'inside a human ear, no text',
+                    'A test person wearing headphones watching a video monitor in a psychology '
+                    'lab, no text',
+                    'Abstract art of sensory signals from eyes and ears merging into a human '
+                    'brain, no text']}]
