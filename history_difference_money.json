@@ -635,5 +635,12 @@
     "kind": "short",
     "category": "Finance",
     "title": "$200,000 in an S&P 500 ETF vs House: 2008–2026"
+  },
+  {
+    "date": "2026-11-01 16:56",
+    "ts_utc": "2026-11-01T16:56:07.695720+00:00",
+    "kind": "short",
+    "category": "Finance",
+    "title": "$1,000 in Visa stock vs Card spending: 2016–2026"
   }
 ]
