@@ -82,4 +82,25 @@ NEU = [{'category': 'Astronomie',
                     'A test person wearing headphones watching a video monitor in a psychology '
                     'lab, no text',
                     'Abstract art of sensory signals from eyes and ears merging into a human '
-                    'brain, no text']}]
+                    'brain, no text']},
+ {'category': 'Geschichte',
+  'title': 'Der kürzeste Krieg dauerte keine 45 Minuten',
+  'hook': 'Dieser Krieg war nach nur 38 Minuten vorbei.',
+  'body': 'Am 27. August 1896 brach der Britisch-Sansibarische Krieg aus. Nach dem Tod des Sultans '
+          'übernahm dessen Cousin Chalid ibn Barghasch ohne britische Zustimmung den Palast. Die '
+          'Briten stellten ein Ultimatum. Als Barghasch sich weigerte abzutreten, eröffneten '
+          'britische Kriegsschiffe das Feuer. Sie zerstörten den Palast und versenkten die '
+          'königliche Jacht. Nach nur 38 bis 45 Minuten kapitulierten die Verteidiger. Der '
+          'Konflikt gilt als der kürzeste dokumentierte Krieg der Weltgeschichte.',
+  'cta': 'Hättest du gedacht, dass ein Krieg so schnell enden kann?',
+  'tags': ['Geschichte', 'Sansibar', 'Krieg', 'Weltrekord', 'Großbritannien'],
+  'sources': ['Encyclopaedia Britannica: Anglo-Zanzibar War',
+              'Guinness World Records: Shortest war'],
+  'image_prompts': ['Historical British navy warships lined up near a coastal palace in 1896, '
+                    'cinematic lighting, no text',
+                    'Old palace of Zanzibar with smoke rising from artillery impact, vintage '
+                    'photograph style, no text',
+                    'Royal wooden yacht sinking in the harbor under a cloudy sky in late 19th '
+                    'century, no text',
+                    'British colonial officers standing on deck looking through binoculars at the '
+                    'coast, historical reenactment style, no text']}]
