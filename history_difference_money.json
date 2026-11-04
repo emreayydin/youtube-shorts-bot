@@ -684,5 +684,12 @@
     "kind": "short",
     "category": "Finance",
     "title": "$220,000 in a Nasdaq ETF vs Home: 2010–2026"
+  },
+  {
+    "date": "2026-11-04 08:31",
+    "ts_utc": "2026-11-04T08:31:06.728837+00:00",
+    "kind": "short",
+    "category": "Finance",
+    "title": "$18,000 in an S&P 500 ETF vs Rent: 2016–2026"
   }
 ]
