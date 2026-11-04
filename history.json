@@ -2333,5 +2333,12 @@
     "kind": "short",
     "category": "Weltrekorde",
     "title": "Im Burj Khalifa fastest du länger"
+  },
+  {
+    "date": "2026-11-04 13:00",
+    "ts_utc": "2026-11-04T13:00:37.652242+00:00",
+    "kind": "short",
+    "category": "Technologie",
+    "title": "Der erste Computer-Bug war eine echte Motte"
   }
 ]
