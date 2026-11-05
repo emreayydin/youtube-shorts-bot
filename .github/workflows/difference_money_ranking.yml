@@ -78,8 +78,14 @@ jobs:
       YOUTUBE_TOKEN_JSON: ${{ secrets.DIFFERENCE_MONEY_YOUTUBE_TOKEN_JSON }}
 
     steps:
+      # ref: main statt des Ausloese-Commits: Ein Lauf, der hinter einem
+      # anderen in der concurrency-Gruppe wartet, saehe sonst eine alte
+      # history_difference_money.json - Tageslimit und 60-Tage-Sperre
+      # wuerden dann gegen einen veralteten Stand geprueft.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Install system dependencies
         run: |
