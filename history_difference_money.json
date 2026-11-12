@@ -859,5 +859,12 @@
     "kind": "short",
     "category": "Finance",
     "title": "$200 in Nike stock vs Sneakers: 2016–2026"
+  },
+  {
+    "date": "2026-11-12 13:04",
+    "ts_utc": "2026-11-12T13:04:10.697210+00:00",
+    "kind": "short",
+    "category": "Finance",
+    "title": "$25,000 in an S&P 500 ETF vs New car: 2016–2026"
   }
 ]
