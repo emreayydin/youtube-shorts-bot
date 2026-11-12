@@ -2501,5 +2501,12 @@
     "kind": "short",
     "category": "Geschichte",
     "title": "Der Kölner Dom war das höchste Gebäude der Welt"
+  },
+  {
+    "date": "2026-11-12 13:02",
+    "ts_utc": "2026-11-12T13:02:04.435271+00:00",
+    "kind": "short",
+    "category": "Technologie",
+    "title": "Deine Tastatur stammt von einer Schreibmaschine"
   }
 ]
